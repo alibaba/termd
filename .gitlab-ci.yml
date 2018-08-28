@@ -1,0 +1,11 @@
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script: "mvn clean package"
+
+unit-test:
+  stage: test
+  script: "mvn -U test"

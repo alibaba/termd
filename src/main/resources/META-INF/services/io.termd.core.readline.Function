@@ -1,0 +1,15 @@
+io.termd.core.readline.functions.BackwardChar
+io.termd.core.readline.functions.BackwardKillWord
+io.termd.core.readline.functions.BackwardWord
+io.termd.core.readline.functions.ForwardChar
+io.termd.core.readline.functions.ForwardWord
+io.termd.core.readline.functions.BackwardDeleteChar
+io.termd.core.readline.functions.PreviousHistory
+io.termd.core.readline.functions.EndOfLine
+io.termd.core.readline.functions.NextHistory
+io.termd.core.readline.functions.BeginningOfLine
+io.termd.core.readline.functions.DeleteChar
+io.termd.core.readline.functions.Complete
+io.termd.core.readline.functions.KillLine
+io.termd.core.readline.functions.Undo
+io.termd.core.readline.functions.BackwardKillLine

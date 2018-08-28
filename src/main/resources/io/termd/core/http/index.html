@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arthas web console</title>
+    <script src="term.js"></script>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="web-console.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <script type="text/javascript">
+        window.addEventListener('resize', function() {
+            var charSize = getCharSize();
+            var windowSize = getwindowSize();
+            var cols = Math.floor(windowSize.width / charSize.width);
+            var rows = Math.floor(windowSize.height / charSize.height);
+            socket.send(JSON.stringify({action: 'resize', cols: cols, rows: rows}));
+            term.resize(cols, rows);
+        });
+    </script>
+</head>
+
+<body>
+
+<h1>Welcome to Arthas web console!</h1>
+
+<div>
+    IP: <input id="ip" type="text" value="localhost"/>
+    PORT: <input id="port" type="text" value="8563"/>
+    <button id="connect" onclick="connect();">Connect</button>
+    <button id="disconnect" onclick="disconnect();">Disconnect</button>
+</div>
+<br>
+
+</body>
+</html>

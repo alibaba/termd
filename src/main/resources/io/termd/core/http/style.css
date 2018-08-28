@@ -1,0 +1,22 @@
+/*html {*/
+/*background: #555;*/
+/*}*/
+
+h1 {
+    margin-bottom: 20px;
+    font: 20px/1.5 sans-serif;
+}
+
+.terminal {
+    float: left;
+    border: #000 solid 5px;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 11px;
+    color: #f0f0f0;
+    background: #000;
+}
+
+.terminal-cursor {
+    color: #000;
+    background: #f0f0f0;
+}

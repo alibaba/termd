@@ -1,0 +1,456 @@
+options {
+  STATIC = false;
+  SUPPORT_CLASS_VISIBILITY_PUBLIC = true;
+  ERROR_REPORTING = false;
+  JAVA_UNICODE_ESCAPE = true;
+  UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(TermInfoParser)
+
+package io.termd.core.term;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+public class TermInfoParser {
+
+  public TermInfoParser(String s) {
+    this(new java.io.StringReader(s));
+  }
+
+  public List<String> parseHeaderLine() throws ParseException {
+    final List<String> headerLine = new ArrayList<String>();
+    parseHeaderLine(new ParserHandler() {
+      public void beginHeaderLine(String alias) { headerLine.add(alias); }
+      public void addHeader(String alias) { headerLine.add(alias); }
+    });
+    return headerLine;
+  }
+
+  public void parseFeatureLine() throws ParseException {
+    parseFeatureLine(new ParserHandler());
+  }
+
+  public void parseDevice() throws ParseException {
+    parseDevice(new ParserHandler());
+  }
+
+  public void parseDatabase() throws ParseException {
+    parseDatabase(new ParserHandler());
+  }
+
+  private String convertControlChar(String s) {
+    char c = s.charAt(0);
+    if (c >= 64) {
+      if (c >= 'a' && c <= 'z') {
+        c = (char)(c - 'a' + 'A' - 64);
+      } else {
+        c -= 64;
+      }
+      return String.valueOf(c);
+    } else {
+        throw new UnsupportedOperationException("Invalid control :" + s);
+    }
+  }
+
+  private String convertEscChar(String s) {
+    char c = s.charAt(0);
+    switch (c) {
+      case 'e':
+      case 'E':
+        c = 27;
+        break;
+      case 'a':
+        c = 7;
+        break;
+      case 'b':
+        c = 8;
+        break;
+      case 'r':
+        c = '\r';
+        break;
+      case 'n':
+        c = '\n';
+        break;
+      case 't':
+        c = '\t';
+        break;
+      case 'f':
+        c = 12;
+        break;
+      case 'A':
+        c = 1;
+        break;
+      case ':':
+      case ',':
+      case '^':
+      case '\\':
+        break;
+      case 's':
+        c = ' ';
+        break;
+      default:
+        throw new UnsupportedOperationException("Invalid escape :" + s);
+    }
+    return String.valueOf(c);
+  }
+
+  public Sequence parseSequence() throws ParseException {
+    token_source.SwitchTo(PARSING_FEATURE_VALUE);
+    final Sequence[] ref = new Sequence[1];
+    parseStringFeature("", new ParserHandler() {
+      public void addStringFeature(String name, Sequence value) {
+        ref[0] = value;
+      }
+    });
+    return ref[0];
+  }
+
+  // For testing purposes we switch the lexical state before
+  public OpCode parseSingleOpCode() throws ParseException {
+    token_source.SwitchTo(PARSING_STRING_VALUE);
+    return parseChar();
+  }
+}
+
+PARSER_END(TermInfoParser)
+
+<DEFAULT> TOKEN: {
+  <#BLANK: [" ","\t"]> |
+  <#END_FEATURE: ","(<BLANK>)*>
+}
+
+<DEFAULT> TOKEN: {
+  <START_FEATURE_LINE: <BLANK>> : PARSING_FEATURE_LINE |
+  <START_HEADER_LINE: (["!"-"\""]|["$"-"+"]|["-"-"{"]|["}"-"~"])([" "-"+"]|["-"-"{"]|["}"-"~"]|("," ~["\n"]))*> : PARSING_HEADER_LINE |
+  <START_COMMENT_LINE: "#"> : PARSING_COMMENT |
+  <EMPTY_LINE: "\n">
+}
+
+<PARSING_HEADER_LINE> TOKEN: {
+  <HEADER_VALUE: ([" "-"\""]|["$"-"+"]|["-"-"{"]|["}"-"~"])([" "-"+"]|["-"-"{"]|["}"-"~"]|("," ~["\n"]))*> |
+  <START_HEADER: "|"> |
+  <END_HEADER_LINE: "," "\n"> : DEFAULT
+}
+
+<PARSING_COMMENT> TOKEN: {
+  <ANY_CHAR: ~["\n"]> |
+  <END_COMMENT_LINE: "\n"> : DEFAULT
+}
+
+<PARSING_FEATURE_LINE> TOKEN: {
+  <START_FEATURE: (["\t"," "])* (["!"-"\""] | ["$"-"+"] | ["-"-"<"] | [">"-"]"] | ["_"-"~"])+> : PARSING_FEATURE_VALUE |
+  <END_FEATURE_LINE: (<BLANK>)*"\n"> : DEFAULT
+}
+
+<PARSING_FEATURE_VALUE> TOKEN: {
+  <START_STRING_VALUE: "="> : PARSING_STRING_VALUE |
+  <START_NUMERIC_VALUE: "#"> : PARSING_NUMERIC_VALUE |
+  <END_BOOLEAN_VALUE: <END_FEATURE>> : PARSING_FEATURE_LINE
+}
+
+<PARSING_STRING_VALUE> TOKEN: {
+  <STRING_CHAR: [" "-"$"] | "&" | ["("-"+"] | ["-"-"["] | ["]"] | ["_"-"~"]> |
+  <STRING_QUOTE: "'"> |
+  <STRING_ESC: ["\\"]> : PARSING_STRING_ESC |
+  <STRING_CARET: ["^"]> : PARSING_STRING_CARET |
+  <OP_CODE_PUSH_PARAM: "%p" ["1"-"9"]> |
+  <OP_CODE_PRINTF: "%" (":")? (["-","+","#"," "])? (["0"-"9"])* ("."(["0"-"9"])+)? (["d","o","x","X","s"])? > |
+  <OP_CODE_PUSH_INTEGER_CONSTANT: "%{" ( ["0"-"9"] )+ "}" > |
+  <OP_CODE_BIT_AND: "%&"> |
+  <OP_CODE_BIT_OR: "%|"> |
+  <OP_CODE_BIT_XOR: "%^"> |
+  <OP_CODE_BIT_NEG: "%~"> |
+  <OP_CODE_PERCENT: "%%"> |
+  <OP_CODE_PRINT_CHAR: "%c"> |
+  <OP_CODE_SET_POP_VARIABLE: "%P" ["A"-"Z","a"-"z"]> |
+  <OP_CODE_GET_PUSH_VARIABLE: "%g" ["A"-"Z","a"-"z"]> |
+  <OP_CODE_PUSH_CHAR_CONSTANT: "%'"> |
+  <OP_CODE_PUSH_STRLEN: "%l"> |
+  <OP_CODE_ARITHMETIC_PLUS: "%+"> |
+  <OP_CODE_ARITHMETIC_MINUS: "%-"> |
+  <OP_CODE_ARITHMETIC_MUL: "%*"> |
+  <OP_CODE_ARITHMETIC_DIV: "%/"> |
+  <OP_CODE_ARITHMETIC_MOD: "%m"> |
+  <OP_CODE_LOGICAL_EQ: "%="> |
+  <OP_CODE_LOGICAL_GT: "%>"> |
+  <OP_CODE_LOGICAL_LT: "%<"> |
+  <OP_CODE_LOGICAL_AND: "%A"> |
+  <OP_CODE_LOGICAL_OR: "%O"> |
+  <OP_CODE_LOGICAL_NEG: "%!"> |
+  <OP_CODE_ADD_1_TO_PARAMS: "%i"> |
+  <OP_CODE_EXPR_IF: "%?"> |
+  <OP_CODE_EXPR_THEN: "%t"> |
+  <OP_CODE_EXPR_ELSE: "%e"> |
+  <OP_CODE_EXPR_FI: "%;"> |
+  <END_STRING_VALUE : <END_FEATURE>> : PARSING_FEATURE_LINE
+}
+
+<PARSING_STRING_ESC> TOKEN: {
+  <ANY_ESC_VALUE: ["A","E","a","b","e","f","n","r","s","t",",","\\",":","^"]> : PARSING_STRING_VALUE |
+  <#OCTAL_DIGIT: ["0"-"7"]> |
+  <ESC_ZERO_OCTAL: "0" (<OCTAL_DIGIT><OCTAL_DIGIT>)?> : PARSING_STRING_VALUE |
+  <ESC_OTHER_OCTAL: ["1"-"7"] (<OCTAL_DIGIT><OCTAL_DIGIT>)?> : PARSING_STRING_VALUE
+}
+
+<PARSING_STRING_CARET> TOKEN: {
+  <ANY_CARET_VALUE: ["A"-"Z","a"-"z","_","^","\\","]"]> : PARSING_STRING_VALUE
+}
+
+<PARSING_NUMERIC_VALUE> TOKEN: {
+  <DEC_VALUE: ["1"-"9"](["0"-"9"])*> |
+  <OCT_VALUE: (["0"-"7"])+> |
+  <HEX_VALUE: "0x" (["0"-"9","A"-"F","a"-"f"])+> |
+  <END_NUMERIC_VALUE : <END_FEATURE>> : PARSING_FEATURE_LINE
+}
+
+void parseDatabase(ParserHandler handler):
+{}
+{
+  ( parseDevice(handler) | parseCommentLine() | <EMPTY_LINE> ) *
+  { handler.endDatabase(); }
+}
+
+void parseDevice(ParserHandler handler):
+{}
+{
+  parseHeaderLine(handler)
+  ( parseFeatureLine(handler) ) *
+  { handler.endDevice(); }
+}
+
+void parseCommentLine():
+{}
+{
+  <START_COMMENT_LINE> ( <ANY_CHAR> ) * <END_COMMENT_LINE>
+}
+
+void parseHeaderLine(ParserHandler handler):
+{ Token alias; }
+{
+  alias=<START_HEADER_LINE> { handler.beginHeaderLine(alias.image); } ( <START_HEADER> alias=<HEADER_VALUE> { handler.addHeader(alias.image); } ) *  <END_HEADER_LINE>
+  { handler.endHeaderLine(); }
+}
+
+void parseFeatureLine(ParserHandler handler):
+{}
+{
+  ( <START_FEATURE_LINE> ( parseFeature(handler) ) + <END_FEATURE_LINE> )
+}
+
+void parseFeature(ParserHandler handler):
+{ Token name; }
+{
+  name=<START_FEATURE> ( parseBooleanFeature(name.image, handler) | parseStringFeature(name.image, handler) | parseNumericFeature(name.image, handler) )
+}
+
+void parseBooleanFeature(String name, ParserHandler handler):
+{}
+{
+  <END_BOOLEAN_VALUE> {
+    if (name.endsWith("@")) {
+      handler.addBooleanFeature(name.substring(0, name.length() - 1), false);
+    } else {
+      handler.addBooleanFeature(name, true);
+    }
+  }
+}
+
+void parseStringFeature(String name, ParserHandler handler):
+{ List<OpCode> value = new ArrayList<OpCode>(); OpCode opcode; }
+{
+  try {
+    <START_STRING_VALUE> (
+      opcode=parseChar()
+      {
+        if (opcode instanceof OpCode.Literal && value.size() > 0 && value.get(value.size() - 1) instanceof OpCode.Literal) {
+          value.set(value.size() - 1, new OpCode.Literal("" + value.get(value.size() - 1) + opcode));
+        } else {
+          value.add(opcode);
+        }
+      }
+    ) * <END_STRING_VALUE>
+    { handler.addStringFeature(name, new Sequence(value)); }
+  } catch (ParseException e) {
+    // Deep error recovery
+    io.termd.core.util.Logging.TERMINFO.trace("Could not parse feature " + name);
+    Token t;
+    do {
+      t = getNextToken();
+    }
+    while (t.kind != END_STRING_VALUE);
+  }
+}
+
+OpCode parseChar():
+{ OpCode opcode; }
+{
+  ( opcode=parseStringLiteral() | opcode=parseOpCode() ) { return opcode; }
+}
+
+OpCode.Literal parseStringLiteral():
+{ StringBuilder buffer = new StringBuilder(); char c; }
+{ ( c=parseCharLiteral() { buffer.append(c); } )+
+  { return new OpCode.Literal(buffer.toString()); }
+}
+
+char parseCharLiteral():
+{ char c;Token t; }
+{ ( t=<STRING_CHAR> { c=t.image.charAt(0); } |
+    <STRING_QUOTE> { c='\''; } |
+    ( <STRING_ESC> (
+      ( t=<ANY_ESC_VALUE> { c=convertEscChar(t.image).charAt(0); } ) |
+        t=<ESC_ZERO_OCTAL> { c=(char) Integer.parseInt(t.image, 8); } |
+        t=<ESC_OTHER_OCTAL> { c=(char) Integer.parseInt(t.image, 8); }
+      )
+    ) |
+    ( <STRING_CARET> t=<ANY_CARET_VALUE> { c=convertControlChar(t.image).charAt(0); } )
+  )
+  { return c; }
+}
+
+OpCode parseOpCode():
+{ OpCode opcode; }
+{ ( opcode=parseOpCodePushParam() |
+    opcode=parseOpCodePrintf() |
+    opcode=parseOpCodePushIntegerConstant() |
+    opcode=parseOpCodeBit() |
+    opcode=parseOpCodeArithmetic() |
+    opcode=parseOpCodeLogical() |
+    opcode=parseOpCodePercent() |
+    opcode=parseOpCodeAdd1ToParams() |
+    opcode=parseOpCodePushStrLen() |
+    opcode=parseOpCodePrintChar() |
+    opcode=parseOpCodeVariable() |
+    opcode=parseOpCodePushCharConstant() |
+    opcode=parseOpCodeExpr()
+  )
+  { return opcode; }
+}
+
+OpCode.If parseOpCodeExpr():
+{ OpCode opcode;List<OpCode> expr=new ArrayList<OpCode>();OpCode.Then thenPart; }
+{ ( <OP_CODE_EXPR_IF> (opcode=parseChar(){expr.add(opcode);})+ thenPart=parseThen() <OP_CODE_EXPR_FI> )
+  { return new OpCode.If(expr,thenPart); }
+}
+
+OpCode.Then parseThen():
+{ OpCode opcode;List<OpCode> expr=new ArrayList<OpCode>();List<OpCode> elseExpr=new ArrayList<OpCode>();ElsePart elsePart=null;OpCode.Then thenPart; }
+{  <OP_CODE_EXPR_THEN> (opcode=parseChar(){expr.add(opcode);})+
+  (
+    <OP_CODE_EXPR_ELSE> (opcode=parseChar(){elseExpr.add(opcode);})+ {elsePart=new OpCode.Else(elseExpr);} (thenPart=parseThen(){elsePart=new OpCode.If(elseExpr,thenPart);})?
+  )?
+  { return new OpCode.Then(expr,elsePart); }
+}
+
+OpCode.Bit parseOpCodeBit():
+{ OpCode.Bit opcode; }
+{ ( <OP_CODE_BIT_AND> { opcode=OpCode.Bit.AND; } |
+    <OP_CODE_BIT_OR> { opcode=OpCode.Bit.OR; } |
+    <OP_CODE_BIT_XOR> { opcode=OpCode.Bit.XOR; } |
+    <OP_CODE_BIT_NEG> { opcode=OpCode.Bit.NEG; } )
+  { return opcode; }
+}
+
+OpCode.Arithmetic parseOpCodeArithmetic():
+{ OpCode.Arithmetic opcode; }
+{ ( <OP_CODE_ARITHMETIC_PLUS> { opcode=OpCode.Arithmetic.PLUS; } |
+    <OP_CODE_ARITHMETIC_MINUS> { opcode=OpCode.Arithmetic.MINUS; } |
+    <OP_CODE_ARITHMETIC_MUL> { opcode=OpCode.Arithmetic.MUL; } |
+    <OP_CODE_ARITHMETIC_DIV> { opcode=OpCode.Arithmetic.DIV; } |
+    <OP_CODE_ARITHMETIC_MOD> { opcode=OpCode.Arithmetic.MOD; } )
+  { return opcode; }
+}
+
+OpCode.Logical parseOpCodeLogical():
+{ OpCode.Logical opcode; }
+{ ( <OP_CODE_LOGICAL_EQ> { opcode=OpCode.Logical.EQ; } |
+    <OP_CODE_LOGICAL_GT> { opcode=OpCode.Logical.GT; } |
+    <OP_CODE_LOGICAL_LT> { opcode=OpCode.Logical.LT; } |
+    <OP_CODE_LOGICAL_AND> { opcode=OpCode.Logical.AND; } |
+    <OP_CODE_LOGICAL_OR> { opcode=OpCode.Logical.OR; } |
+    <OP_CODE_LOGICAL_NEG> { opcode=OpCode.Logical.NEG; }
+  )
+  { return opcode; }
+}
+
+OpCode.Percent parseOpCodePercent():
+{ OpCode.Percent opcode; }
+{ ( <OP_CODE_PERCENT> { opcode=OpCode.Percent.INSTANCE; } )
+  { return opcode; }
+}
+
+OpCode.Add1ToParams parseOpCodeAdd1ToParams():
+{ OpCode.Add1ToParams opcode; }
+{ ( <OP_CODE_ADD_1_TO_PARAMS> { opcode=OpCode.Add1ToParams.INSTANCE; } )
+  { return opcode; }
+}
+
+OpCode.PushStrLen parseOpCodePushStrLen():
+{ OpCode.PushStrLen opcode; }
+{ ( <OP_CODE_PUSH_STRLEN> { opcode=OpCode.PushStrLen.INSTANCE; } )
+  { return opcode; }
+}
+
+OpCode.PushParam parseOpCodePushParam():
+{ Token t; }
+{ t=<OP_CODE_PUSH_PARAM>
+  { return new OpCode.PushParam(t.image.charAt(2) - '0'); }
+}
+
+OpCode.PushConstant parseOpCodePushIntegerConstant():
+{ Token t; }
+{ t=<OP_CODE_PUSH_INTEGER_CONSTANT>
+  { return new OpCode.PushConstant(Integer.parseInt(t.image.substring(2, t.image.length() - 1)), true); }
+}
+
+OpCode parseOpCodePrintf():
+{ Token t; }
+{
+  t=<OP_CODE_PRINTF>
+  {
+    if ("%+".equals(t.image)) {
+        return OpCode.Arithmetic.PLUS;
+    } else if ("%-".equals(t.image)) {
+        return OpCode.Arithmetic.MINUS;
+    } else {
+        return OpCode.Printf.parse(t.image);
+    }
+  }
+}
+
+OpCode.PrintChar parseOpCodePrintChar():
+{ }
+{
+  <OP_CODE_PRINT_CHAR>
+  { return OpCode.PrintChar.INSTANCE; }
+}
+
+OpCode parseOpCodeVariable():
+{ Token t;}
+{
+  t=<OP_CODE_SET_POP_VARIABLE> { return new OpCode.SetPopVar(t.image.charAt(2)); } |
+  t=<OP_CODE_GET_PUSH_VARIABLE> { return new OpCode.GetPushVar(t.image.charAt(2)); }
+}
+
+OpCode.PushConstant parseOpCodePushCharConstant():
+{ char c; }
+{
+  <OP_CODE_PUSH_CHAR_CONSTANT> c=parseCharLiteral() <STRING_QUOTE>
+  { return new OpCode.PushConstant(c, false);  }
+}
+
+void parseNumericFeature(String name, ParserHandler handler):
+{ Token t; }
+{
+  ( <START_NUMERIC_VALUE> (
+    t=<HEX_VALUE> { handler.addNumericFeature(name, Integer.parseInt(t.image.substring(2), 16)); } |
+    t=<OCT_VALUE> { handler.addNumericFeature(name, Integer.parseInt(t.image, 8)); } |
+    t=<DEC_VALUE> { handler.addNumericFeature(name, Integer.parseInt(t.image)); }
+  ) <END_NUMERIC_VALUE> )
+}
+
