@@ -53,7 +53,7 @@ public class Helper {
    * @return the code points
    */
   public static int[] toCodePoints(String s) {
-    List<Integer> codePoints = new LinkedList<Integer>();
+    List<Integer> codePoints = new ArrayList<Integer>();
     for (int offset = 0; offset < s.length();) {
       int cp = s.codePointAt(offset);
       codePoints.add(cp);
