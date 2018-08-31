@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <parent>
-    <groupId>com.taobao</groupId>
-    <artifactId>parent</artifactId>
-    <version>2.0.0</version>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>9</version>
   </parent>
 
   <groupId>com.alibaba.middleware</groupId>
@@ -16,7 +16,7 @@
   <name>Termd Core</name>
   <description>An open source terminal daemon library providing terminal handling in Java,
     back ported to Alibaba by core engine team to support running on JDK 6+.</description>
-  <url>http://termd.io/</url>
+  <url>https://github.com/alibaba/termd</url>
 
   <licenses>
     <license>
@@ -26,25 +26,17 @@
     </license>
   </licenses>
 
-  <organization>
-    <name>Termd</name>
-    <url>http://termd.io</url>
-  </organization>
-
-  <!--<scm>-->
-    <!--<connection>scm:git:git@github.com:termd/termd.git</connection>-->
-    <!--<developerConnection>scm:git:ssh://git@github.com/termd/termd.git</developerConnection>-->
-    <!--<url>git@github.com:termd/termd.git</url>-->
-  <!--</scm>-->
+  <scm>
+    <connection>scm:git:git@github.com:alibaba/termd.git</connection>
+    <developerConnection>scm:git:git@github.com:alibaba/termd.git</developerConnection>
+    <url>https://github.com/alibaba/termd</url>
+  </scm>
 
   <developers>
     <developer>
-      <id>julien.viet</id>
-      <name>Julien Viet</name>
-      <email>julien@julienviet.com</email>
-      <roles>
-        <role>Owner</role>
-      </roles>
+      <id>hengyunabc</id>
+      <name>hengyunabc</name>
+      <email>hengyunabc@gmail.com</email>
     </developer>
   </developers>
 
