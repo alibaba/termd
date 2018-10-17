@@ -43,7 +43,7 @@
   <properties>
     <version.org.slf4j>1.7.21</version.org.slf4j>
     <netty.version>4.1.1.Final</netty.version>
-    <jackson.version>2.7.4</jackson.version>
+    <jackson.version>2.7.9.4</jackson.version>
 
     <!-- maven-compiler-plugin -->
     <maven.compiler.target>1.6</maven.compiler.target>
@@ -81,11 +81,6 @@
       <version>${netty.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
