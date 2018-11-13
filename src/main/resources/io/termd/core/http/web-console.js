@@ -3,7 +3,7 @@
  */
 
 function getCharSize() {
-    var span = $('<span />').attr({'id': 'test'}).html('qwertyuiopasdfghjklzxcvbnm');
+    var span = $('<span />').attr({'id': 'test'}).attr({'class': 'terminal'}).html('qwertyuiopasdfghjklzxcvbnm');
     $("html body").append(span);
     var size = {
         width: $("#test").outerWidth() / 26
