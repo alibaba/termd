@@ -3,15 +3,20 @@
  */
 
 function getCharSize() {
-    var span = $('<span />').attr({'id': 'test'}).attr({'class': 'terminal'}).html('qwertyuiopasdfghjklzxcvbnm');
-    $("html body").append(span);
+    var tempDiv = $('<div />').attr({'class': 'terminal'});
+    var tempSpan = $('<div />').html('qwertyuiopasdfghjklzxcvbnm');
+    tempDiv.append(tempSpan);
+    $("html body").append(tempDiv);
     var size = {
-        width: $("#test").outerWidth() / 26
-        , height: $("#test").outerHeight()
+        width: tempSpan.outerWidth() / 26,
+        height: tempSpan.outerHeight(),
+        left: tempDiv.outerWidth() - tempSpan.outerWidth(),
+        top: tempDiv.outerHeight() - tempSpan.outerHeight(),
     };
-    $("#test").remove();
+    tempDiv.remove();
     return size;
 }
+
 function getwindowSize() {
     var e = window,
         a = 'inner';
@@ -19,7 +24,16 @@ function getwindowSize() {
         a = 'client';
         e = document.documentElement || document.body;
     }
-    return {width: e[a + 'Width'], height: e[a + 'Height']};
+    var terminalDiv = document.getElementById("terminal");
+    var terminalDivRect = terminalDiv.getBoundingClientRect();
+    return {width: terminalDivRect.width, height: e[a + 'Height'] - terminalDivRect.top};
+}
+
+function getTerminalSize() {
+    var charSize = getCharSize();
+    var windowSize = getwindowSize();
+    return {cols: Math.floor((windowSize.width - charSize.left) / charSize.width),
+    rows: Math.floor((windowSize.height - charSize.top) / charSize.height)};
 }
 
 function connect() {
@@ -33,13 +47,10 @@ function connect() {
     }
     socket = new WebSocket("ws://" + ip.value + ":" + port.value + "/ws");
 
-    var charSize = getCharSize();
-    var windowSize = getwindowSize();
-    var cols = Math.floor(windowSize.width / charSize.width);
-    var rows = Math.floor(windowSize.height / charSize.height);
+    var terminalSize = getTerminalSize();
 
     socket.onopen = function () {
-        term = new Terminal({cols: cols, rows: rows, screenKeys: true});
+        term = new Terminal({cols: terminalSize.cols, rows: terminalSize.rows, screenKeys: true});
         socket.onmessage = function (event) {
             if (event.type === 'message') {
                 var data = event.data;
@@ -54,8 +65,8 @@ function connect() {
         term.on('data', function (data) {
             socket.send(JSON.stringify({action: 'read', data: data}));
         });
-        term.open(document.body);
-        socket.send(JSON.stringify({action: 'resize', cols: cols, rows: rows}));
+        term.open(document.getElementById("terminal"));
+        socket.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
         window.setInterval(function () {
             socket.send(JSON.stringify({action: 'read', data: ""}));
         }, 30000)

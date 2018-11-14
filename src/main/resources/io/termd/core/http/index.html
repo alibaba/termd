@@ -8,12 +8,9 @@
 
     <script type="text/javascript">
         window.addEventListener('resize', function() {
-            var charSize = getCharSize();
-            var windowSize = getwindowSize();
-            var cols = Math.floor(windowSize.width / charSize.width);
-            var rows = Math.floor(windowSize.height / charSize.height);
-            socket.send(JSON.stringify({action: 'resize', cols: cols, rows: rows}));
-            term.resize(cols, rows);
+            var terminalSize = getTerminalSize();
+            socket.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
+            term.resize(terminalSize.cols, terminalSize.rows);
         });
     </script>
 </head>
@@ -45,6 +42,7 @@
     <button id="disconnect" onclick="disconnect();">Disconnect</button>
 </div>
 <br>
+<div id="terminal" style="width:100%;"></div>
 
 </body>
 </html>
