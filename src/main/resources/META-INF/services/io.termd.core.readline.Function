@@ -13,3 +13,5 @@ io.termd.core.readline.functions.Complete
 io.termd.core.readline.functions.KillLine
 io.termd.core.readline.functions.Undo
 io.termd.core.readline.functions.BackwardKillLine
+io.termd.core.readline.functions.HistorySearchBackward
+io.termd.core.readline.functions.HistorySearchForward
