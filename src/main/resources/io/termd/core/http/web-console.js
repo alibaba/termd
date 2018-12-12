@@ -1,9 +1,8 @@
-/**
- * Created by wangtao on 12/12/2016.
- */
+var ws;
+var xterm;
 
-function getCharSize() {
-    var tempDiv = $('<div />').attr({'class': 'terminal'});
+function getCharSize () {
+    var tempDiv = $('<div />').attr({'role': 'listitem'});
     var tempSpan = $('<div />').html('qwertyuiopasdfghjklzxcvbnm');
     tempDiv.append(tempSpan);
     $("html body").append(tempDiv);
@@ -17,64 +16,120 @@ function getCharSize() {
     return size;
 }
 
-function getwindowSize() {
-    var e = window,
-        a = 'inner';
+function getWindowSize () {
+    var e = window;
+    var a = 'inner';
     if (!('innerWidth' in window )) {
         a = 'client';
         e = document.documentElement || document.body;
     }
-    var terminalDiv = document.getElementById("terminal");
+    var terminalDiv = document.getElementById("terminal-card");
     var terminalDivRect = terminalDiv.getBoundingClientRect();
-    return {width: terminalDivRect.width, height: e[a + 'Height'] - terminalDivRect.top};
-}
-
-function getTerminalSize() {
-    var charSize = getCharSize();
-    var windowSize = getwindowSize();
-    return {cols: Math.floor((windowSize.width - charSize.left) / charSize.width),
-    rows: Math.floor((windowSize.height - charSize.top) / charSize.height)};
-}
-
-function connect() {
-    var ip = document.getElementById("ip");
-    if (!ip) {
-        alert("Please input ip!");
-    }
-    var port = document.getElementById("port");
-    if (!port) {
-        alert("Please input port!");
-    }
-    socket = new WebSocket("ws://" + ip.value + ":" + port.value + "/ws");
-
-    var terminalSize = getTerminalSize();
-
-    socket.onopen = function () {
-        term = new Terminal({cols: terminalSize.cols, rows: terminalSize.rows, screenKeys: true});
-        socket.onmessage = function (event) {
-            if (event.type === 'message') {
-                var data = event.data;
-                term.write(data);
-            }
-        };
-        socket.onclose = function () {
-            socket.onmessage = null;
-            socket.onclose = null;
-            term.destroy();
-        };
-        term.on('data', function (data) {
-            socket.send(JSON.stringify({action: 'read', data: data}));
-        });
-        term.open(document.getElementById("terminal"));
-        socket.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
-        window.setInterval(function () {
-            socket.send(JSON.stringify({action: 'read', data: ""}));
-        }, 30000)
+    return {
+        width: terminalDivRect.width,
+        height: e[a + 'Height'] - terminalDivRect.top
     };
 }
 
-function disconnect() {
-    socket.onmessage = null;
-    socket.onclose = null;
-    term.destroy();
+function getTerminalSize () {
+    var charSize = getCharSize();
+    var windowSize = getWindowSize();
+    console.log('charsize');
+    console.log(charSize);
+    console.log('windowSize');
+    console.log(windowSize);
+    return {
+        cols: Math.floor((windowSize.width - charSize.left) / 10),
+        rows: Math.floor((windowSize.height - charSize.top) / 17)
+    };
+}
+
+/** init websocket **/
+function initWs (ip, port) {
+    var path = 'ws://' + ip + ':' + port + '/ws';
+    ws = new WebSocket(path);
+}
+
+/** init xterm **/
+function initXterm (cols, rows) {
+    xterm = new Terminal({
+        cols: cols,
+        rows: rows,
+        screenReaderMode: true,
+        rendererType: 'canvas',
+        convertEol: true
+    });
+}
+
+/** begin connect **/
+function startConnect () {
+    var ip = $('#ip').val();
+    var port = $('#port').val();
+    if (ip == '' || port == '') {
+        alert('ip or port can not be empty');
+        return;
+    }
+    if (ws != null) {
+        alert('connection has been built!');
+        return;
+    }
+    // init webSocket
+    initWs(ip, port);
+    ws.onerror = function () {
+        alert('connect error');
+    };
+    ws.onopen = function () {
+        console.log('open');
+        $('#fullSc').show();
+        var terminalSize = getTerminalSize()
+        console.log('terminalSize')
+        console.log(terminalSize)
+        // init xterm
+        initXterm(terminalSize.cols, terminalSize.rows)
+        ws.onmessage = function (event) {
+            if (event.type === 'message') {
+                var data = event.data;
+                xterm.write(data);
+            }
+        };
+        xterm.open(document.getElementById('terminal'));
+        xterm.on('data', function (data) {
+            ws.send(JSON.stringify({action: 'read', data: data}))
+        });
+        ws.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
+        window.setInterval(function () {
+            ws.send(JSON.stringify({action: 'read', data: ""}));
+        }, 30000);
+    }
+}
+
+function disconnect () {
+    try {
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws = null;
+        xterm.destroy();
+        $('#fullSc').hide();
+        alert('connection was closed successfully!');
+    } catch (e) {
+        alert('no connection!');
+    }
+}
+
+/** full screen show **/
+function xtermFullScreen () {
+    var ele = document.getElementById('terminal-card');
+    requestFullScreen(ele);
+}
+
+function requestFullScreen (element) {
+    var requestMethod = element.requestFullScreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullScreen;
+    if (requestMethod) {
+        requestMethod.call(element);
+    } else if (typeof window.ActiveXObject !== "undefined") {
+        var wscript = new ActiveXObject("WScript.Shell");
+        if (wscript !== null) {
+            wscript.SendKeys("{F11}");
+        }
+    }
 }

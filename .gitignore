@@ -1,6 +1,8 @@
 .extract
 .DS_Store
 target
+src/main/webapp/dist
+src/main/webapp/node_modules
 *.releaseBackup
 release.properties
 .idea
