@@ -42,7 +42,6 @@
 </template>
 
 <script>
-// import {Terminal} from 'xterm'
 import 'xterm/src/xterm.css'
 import logo from '@/assets/logo.png'
 import {initWs, getWs, initXterm, getXterm} from '@/utils/xterm-ws'
@@ -66,7 +65,7 @@ export default {
     }
   },
   methods: {
-  	/** 建立连接 **/
+  	/** build connection **/
 	startConnect () {
       console.log("connecting")
       if (this.connectionConfig.ip === '' || this.connectionConfig.port === '') {
@@ -74,7 +73,7 @@ export default {
         return
       }
       this.connectionLoading = true
-      // 初始化websocket连接
+      // init webSocket
       initWs(this.connectionConfig.ip, this.connectionConfig.port)
       let ws = getWs()
       let that = this
@@ -91,9 +90,9 @@ export default {
         let terminalSize = that.getTerminalSize()
         console.log('terminalSize')
         console.log(terminalSize)
-        // 初始化xterm
+        // init xterm
         initXterm(terminalSize.cols, terminalSize.rows)
-        // 获取xterm实例
+        // get xterm
         var xterm = getXterm()
         ws.onmessage = function (event) {
           if (event.type === 'message') {
@@ -125,12 +124,12 @@ export default {
       	this.isConfigShow = false
       }
     },
-    /** 全屏显示 **/
+    /** full screen show **/
     xtermFullScreen () {
       let ele = document.getElementById('terminal-card')
       this.requestFullScreen(ele)
     },
-    /** 窗口变化的处理方法 **/
+    /** resize handler when change size of window **/
     xtermResizeHandler () {
       let ws = getWs()
       let terminalSize = this.getTerminalSize()
@@ -192,9 +191,9 @@ export default {
       }
     }
   },
-  /** 监听事件 **/
+  /** event listener **/
   mounted () {
-  	// 监听窗口变化
+  	// add resize event listener
   	window.addEventListener('resize', this.xtermResizeHandler)
   }
 }
