@@ -40,9 +40,10 @@ img{
     text-indent: 2em;
     outline: none;
     top: 0px;
+    margin-left: 10px;
+    margin-right: 10px;
 }
 .x-connect {
-    position: absolute;
     top: 21px;
     margin-left: 20px;
     background: deepskyblue;
@@ -55,4 +56,38 @@ img{
     font-size: 14px;
     box-sizing: border-box;
     cursor: pointer;
+}
+.x-disconnect {
+    top: 21px;
+    margin-left: 20px;
+    background: darkred;
+    width: 120px;
+    height: 35px;
+    color: white;
+    outline: none;
+    border: 3px solid red;
+    border: 0;
+    font-size: 14px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+#terminal:-webkit-full-screen{
+    background-color: rgb(255, 255, 12);
+}
+.container {
+    width: 100%;
+    min-height: 600px;
+}
+.fullSc {
+    z-index: 10000;
+    position: fixed;
+    top: 25%;
+    left: 90%;
+    display: none;
+}
+#fullScBtn {
+    border-radius:17px;
+    border: 0;
+    cursor: pointer;
+    background-color: black;
 }

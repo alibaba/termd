@@ -24,22 +24,25 @@
     <strong>We're sorry but arthas-web doesn't work properly without JavaScript enabled. Please enable it to
         continue.</strong>
 </noscript>
-<div id=app>
+<div id="app">
     <div class="header">
         <div class="nav-left pull-left">
-            <img src="logo.png" alt="">
+            <img src="logo.png" alt="Arthas" title="welcome to Arthas web console">
         </div>
         <div class="nav-right pull-right">
-            <div style="margin-left: 30%;margin-top: 20px;color: white">
+            <div style="margin-left: 25%;margin-top: 20px;color: white">
                 <label>IP:</label><input class="x-input" type="text" name="ip" id="ip" value="127.0.0.1" placeholder="please enter ip address"/>
                 <label>Port:</label><input class="x-input" type="text" name="port" id="port" value="8563" placeholder="please enter port"/>
-                <button class="x-connect" type="button">Connect</button>
-                <button type="button">Disconnect</button>
+                <button title="connect" class="x-connect" type="button" onclick="startConnect()">Connect</button>
+                <button title="disconnect" class="x-disconnect" type="button" onclick="disconnect()">Disconnect</button>
             </div>
         </div>
     </div>
-    <div class="container">
-
+    <div class="container" id="terminal-card">
+        <div id="terminal"></div>
+    </div>
+    <div title="fullscreen" id="fullSc" class="fullSc" v-show="isXtermShow">
+        <button id="fullScBtn" onclick="xtermFullScreen()"><img src="fullsc.png"></button>
     </div>
 </div>
 </body>
