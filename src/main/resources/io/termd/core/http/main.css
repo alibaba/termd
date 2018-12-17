@@ -1,0 +1,58 @@
+.header{
+    min-width: 1200px;
+    height: 80px;
+    background: #515a6e;
+    position: relative;
+}
+.nav-left {
+    margin-left: 40px;
+    display: inline-block;
+    font-size: 18px;
+}
+.pull-left {
+    float: left!important;
+}
+.header>.nav-left img {
+    position: absolute;
+    display: block;
+    left: 150px;
+    top: 10px;
+}
+img{
+    vertical-align: middle;
+}
+.header>.nav-right {
+    height: 80px;
+}
+.nav-right {
+    display: inline-block;
+    margin-right: 0px;
+    width: 1100px;
+}
+.pull-right {
+    float: right!important;
+}
+.x-input {
+    width: 200px;
+    height: 30px;
+    background: #fff;
+    border: 3px solid deepskyblue;
+    text-indent: 2em;
+    outline: none;
+    top: 0px;
+}
+.x-connect {
+    position: absolute;
+    top: 21px;
+    margin-left: 20px;
+    background: deepskyblue;
+    width: 120px;
+    height: 35px;
+    color: white;
+    outline: none;
+    border: 3px solid deepskyblue;
+    border: 0;
+    font-size: 14px;
+    box-sizing: border-box;
+    cursor: pointer;
+}

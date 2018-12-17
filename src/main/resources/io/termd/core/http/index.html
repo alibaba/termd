@@ -4,20 +4,43 @@
     <meta charset=utf-8>
     <meta http-equiv=X-UA-Compatible content="IE=edge">
     <meta name=viewport content="width=device-width,initial-scale=1">
-    <link rel=icon href=/favicon.ico>
-    <title>arthas-web</title>
-    <link href="css/app.css" rel=preload as=style>
-    <link href="css/chunk-vendors.css" rel=preload as=style>
-    <link href="js/app.js" rel=preload as=script>
-    <link href="js/chunk-vendors.js" rel=preload as=script>
-    <link href="css/chunk-vendors.css" rel=stylesheet>
-    <link href="css/app.css" rel=stylesheet>
+    <title>Arthas web console</title>
+    <link href="main.css" rel="stylesheet"/>
+    <link href="xterm.css" rel="stylesheet"/>
+    <script src="xterm.js" type="text/javascript"></script>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="web-console.js"></script>
+
+    <script type="text/javascript">
+        window.addEventListener('resize', function () {
+            var terminalSize = getTerminalSize();
+            ws.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
+            xterm.resize(terminalSize.cols, terminalSize.rows);
+        });
+    </script>
 </head>
 <body>
-<noscript><strong>We're sorry but arthas-web doesn't work properly without JavaScript enabled. Please enable it to
-    continue.</strong></noscript>
-<div id=app></div>
-<script src="js/chunk-vendors.js"></script>
-<script src="js/app.js"></script>
+<noscript>
+    <strong>We're sorry but arthas-web doesn't work properly without JavaScript enabled. Please enable it to
+        continue.</strong>
+</noscript>
+<div id=app>
+    <div class="header">
+        <div class="nav-left pull-left">
+            <img src="logo.png" alt="">
+        </div>
+        <div class="nav-right pull-right">
+            <div style="margin-left: 30%;margin-top: 20px;color: white">
+                <label>IP:</label><input class="x-input" type="text" name="ip" id="ip" value="127.0.0.1" placeholder="please enter ip address"/>
+                <label>Port:</label><input class="x-input" type="text" name="port" id="port" value="8563" placeholder="please enter port"/>
+                <button class="x-connect" type="button">Connect</button>
+                <button type="button">Disconnect</button>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+
+    </div>
+</div>
 </body>
 </html>
