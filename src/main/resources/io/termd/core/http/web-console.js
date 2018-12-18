@@ -69,6 +69,10 @@ function startConnect () {
         alert('ip or port can not be empty');
         return;
     }
+    if (ws != null) {
+        alert('connection has been built!');
+        return;
+    }
     // init webSocket
     initWs(ip, port);
     ws.onerror = function () {
@@ -103,6 +107,7 @@ function disconnect () {
     try {
         ws.onmessage = null;
         ws.onclose = null;
+        ws = null;
         xterm.destroy();
         $('#fullSc').hide();
         alert('connection was closed successfully!');
