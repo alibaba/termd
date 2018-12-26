@@ -1,6 +1,26 @@
 var ws;
 var xterm;
 
+$(function () {
+    var url = window.location.href;
+    var ip = getUrlParam('ip');
+    var port = getUrlParam('port');
+    if ((ip != '' && ip != null) && (port != '' && port != null)) {
+        $('#ip').val(ip);
+        $('#port').val(port);
+        startConnect();
+    }
+});
+
+/** get params in url **/
+function getUrlParam (name) {
+    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+    var r = window.location.search.substr(1).match(reg);
+    if (r != null)
+        return unescape(r[2]);
+    return null;
+}
+
 function getCharSize () {
     var tempDiv = $('<div />').attr({'role': 'listitem'});
     var tempSpan = $('<div />').html('qwertyuiopasdfghjklzxcvbnm');
