@@ -5,11 +5,15 @@ $(function () {
     var url = window.location.href;
     var ip = getUrlParam('ip');
     var port = getUrlParam('port');
-    if ((ip != '' && ip != null) && (port != '' && port != null)) {
+
+    if (ip != '' && ip != null) {
         $('#ip').val(ip);
-        $('#port').val(port);
-        startConnect();
     }
+    if (port != '' && port != null) {
+        $('#port').val(port);
+    }
+
+    startConnect(true);
 });
 
 /** get params in url **/
@@ -84,7 +88,7 @@ function initXterm (cols, rows) {
 }
 
 /** begin connect **/
-function startConnect () {
+function startConnect (silent) {
     var ip = $('#ip').val();
     var port = $('#port').val();
     if (ip == '' || port == '') {
@@ -98,7 +102,8 @@ function startConnect () {
     // init webSocket
     initWs(ip, port);
     ws.onerror = function () {
-        alert('connect error');
+        ws = null;
+        !silent && alert('connect error');
     };
     ws.onopen = function () {
         console.log('open');
@@ -120,7 +125,9 @@ function startConnect () {
         });
         ws.send(JSON.stringify({action: 'resize', cols: terminalSize.cols, rows: terminalSize.rows}));
         window.setInterval(function () {
-            ws.send(JSON.stringify({action: 'read', data: ""}));
+            if (ws != null) {
+                ws.send(JSON.stringify({action: 'read', data: ""}));
+            }
         }, 30000);
     }
 }
@@ -134,7 +141,7 @@ function disconnect () {
         $('#fullSc').hide();
         alert('connection was closed successfully!');
     } catch (e) {
-        alert('no connection!');
+        alert('no connection, please start connect first.');
     }
 }
 
