@@ -108,6 +108,9 @@ public class LineBuffer {
     Helper.consumeTo(toArray(), status);
     status.buffer.clear();
     for (int cp : codePoints) {
+      if (cp == 0) {
+        continue;
+      }
       if (cp < 32) {
         // Todo support \n with $'\n'
         throw new UnsupportedOperationException("todo");

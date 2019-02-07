@@ -3,6 +3,11 @@
 An open source library for writing terminal applications in Java under ASL 2.0, ported from https://github.com/termd/termd to make it able to run against java6/7.
 
 
+```
+mvn clean package -Dmaven.test.skip -DskipTests
+```
+
+
 ### Consuming the lib
 
 Add this dependency to your build.
