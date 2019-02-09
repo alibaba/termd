@@ -92,18 +92,18 @@ function startConnect (silent) {
     var ip = $('#ip').val();
     var port = $('#port').val();
     if (ip == '' || port == '') {
-        alert('ip or port can not be empty');
+        alert('Ip or port can not be empty');
         return;
     }
     if (ws != null) {
-        alert('connection has been built!');
+        alert('Already connected');
         return;
     }
     // init webSocket
     initWs(ip, port);
     ws.onerror = function () {
         ws = null;
-        !silent && alert('connect error');
+        !silent && alert('Connect error');
     };
     ws.onopen = function () {
         console.log('open');
@@ -139,9 +139,9 @@ function disconnect () {
         ws = null;
         xterm.destroy();
         $('#fullSc').hide();
-        alert('connection was closed successfully!');
+        alert('Connection was closed successfully!');
     } catch (e) {
-        alert('no connection, please start connect first.');
+        alert('No connection, please start connect first.');
     }
 }
 
