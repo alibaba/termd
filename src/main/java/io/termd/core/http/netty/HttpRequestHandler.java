@@ -33,6 +33,7 @@ import io.termd.core.http.HttpTtyConnection;
 import io.termd.core.util.Logging;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 
 /**
@@ -57,7 +58,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
       HttpResponse response = new DefaultHttpResponse(request.getProtocolVersion(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
 
-      String path = request.getUri();
+      String path = new URI(request.getUri()).getPath();
+
       if ("/".equals(path)) {
         path = "/index.html";
       }
