@@ -80,6 +80,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
               contentType = "text/html";
             } else if ("js".equals(ext)) {
               contentType = "application/javascript";
+            } else if ("css".equals(ext)) {
+                contentType = "text/css";
             } else {
               contentType = null;
             }
