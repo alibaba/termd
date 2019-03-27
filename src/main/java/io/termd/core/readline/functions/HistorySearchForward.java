@@ -39,7 +39,7 @@ public class HistorySearchForward implements Function {
             }
 
             if (LineBufferUtils.matchBeforeCursor(buf, line)) {
-                interaction.refresh(new LineBuffer().insert(line).setCursor(cursor));
+                interaction.refresh(new LineBuffer().insert(line).setCursor(line.length));
                 interaction.setHistoryIndex(i);
                 break;
             }
