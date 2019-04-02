@@ -29,6 +29,8 @@ public class HistorySearchBackward implements Function {
 
         int searchStart = curr + 1;
 
+        //search history match before cursor
+        boolean found = false;
         for (int i = searchStart; i < history.size(); ++i) {
             int[] line = history.get(i);
             if (LineBufferUtils.equals(buf, line)) {
@@ -37,8 +39,16 @@ public class HistorySearchBackward implements Function {
             if (LineBufferUtils.matchBeforeCursor(buf, line)) {
                 interaction.refresh(new LineBuffer().insert(line).setCursor(line.length));
                 interaction.setHistoryIndex(i);
+                found = true;
                 break;
             }
+        }
+
+        //if no other history match before cursor, use searchStart
+        if(!found && searchStart < history.size()){
+            int[] line = history.get(searchStart);
+            interaction.refresh(new LineBuffer().insert(line).setCursor(line.length));
+            interaction.setHistoryIndex(searchStart);
         }
 
         interaction.resume();
