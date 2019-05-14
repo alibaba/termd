@@ -40,10 +40,14 @@ public class TelnetChannelHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) {
     ByteBuf buf = (ByteBuf) msg;
-    int size = buf.readableBytes();
-    byte[] data = new byte[size];
-    buf.getBytes(0, data);
-    conn.receive(data);
+    try {
+      int size = buf.readableBytes();
+      byte[] data = new byte[size];
+      buf.getBytes(0, data);
+      conn.receive(data);
+    } finally {
+      buf.release();
+    }
   }
 
   @Override
