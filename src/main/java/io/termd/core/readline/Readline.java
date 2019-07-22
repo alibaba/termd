@@ -253,6 +253,14 @@ public class Readline {
           conn.write(interaction.prompt);
           return;
         }
+        else if (event.getCodePointAt(0) == 12) {
+          // Specific behavior Ctrl-L
+          conn.write("\u001b[H\u001b[2J").write("\n");
+          currentPrompt = prompt;
+          conn.write(interaction.prompt);
+
+          return;
+        }
       }
       if (event instanceof FunctionEvent) {
         FunctionEvent fname = (FunctionEvent) event;
