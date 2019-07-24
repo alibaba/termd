@@ -255,7 +255,13 @@ public class Readline {
         }
         else if (event.getCodePointAt(0) == 12) {
           // Specific behavior Ctrl-L
-          conn.write("\u001b[H\u001b[2J").write("\n");
+          conn.write("\u001b[H\u001b[2J");
+
+          line.clear();
+          buffer.clear();
+          data.clear();
+          historyIndex = -1;
+          conn.stdoutHandler().accept(new int[]{'\n'});
           currentPrompt = prompt;
           conn.write(interaction.prompt);
 
