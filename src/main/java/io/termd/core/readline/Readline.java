@@ -255,7 +255,8 @@ public class Readline {
         }
         else if (event.getCodePointAt(0) == 12) {
           // Specific behavior Ctrl-L
-          conn.write("\u001b[H\u001b[2J");
+          // \033 is the control character, \033[H means move the cursor to (0,0), \033[2J means clear screen
+          conn.write("\033[H\033[2J");
 
           line.clear();
           buffer.clear();
