@@ -253,6 +253,21 @@ public class Readline {
           conn.write(interaction.prompt);
           return;
         }
+        else if (event.getCodePointAt(0) == 12) {
+          // Specific behavior Ctrl-L
+          // \033 is the control character, \033[H means move the cursor to (0,0), \033[2J means clear screen
+          conn.write("\033[H\033[2J");
+
+          line.clear();
+          buffer.clear();
+          data.clear();
+          historyIndex = -1;
+          conn.stdoutHandler().accept(new int[]{'\n'});
+          currentPrompt = prompt;
+          conn.write(interaction.prompt);
+
+          return;
+        }
       }
       if (event instanceof FunctionEvent) {
         FunctionEvent fname = (FunctionEvent) event;
