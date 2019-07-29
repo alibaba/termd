@@ -255,18 +255,11 @@ public class Readline {
         }
         else if (event.getCodePointAt(0) == 12) {
           // Specific behavior Ctrl-L
-          String lineStr = buffer.toString();
 
           // \033 is the control character, \033[H means move the cursor to (0,0), \033[2J means clear screen
           conn.write("\033[H\033[2J");
 
-          historyIndex = -1;
-          conn.stdoutHandler().accept(new int[]{'\n'});
-          currentPrompt = prompt;
-          conn.write(interaction.prompt);
-
-          // keep input line data, like bash
-          conn.write(lineStr);
+          this.redraw();
 
           return;
         }
