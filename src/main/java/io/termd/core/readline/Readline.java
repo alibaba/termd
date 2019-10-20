@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 /**
  * Make this class thread safe as SSH will access this class with different threds [sic].
@@ -43,7 +43,16 @@ public class Readline {
   /**
    * The max number of history item that will be saved in memory.
    */
-  private static final int MAX_HISTORY_SIZE = 500;
+  private static final int MAX_HISTORY_SIZE = Integer.getInteger("termd_max_history_size", 500);
+  private static final Pattern HISTORY_IGNORE_PATTERN;
+  static {
+    String tmp = System.getProperty("termd_history_ignore_pattern");//"\\s*history"
+    if (tmp == null || tmp.isEmpty()) {
+      HISTORY_IGNORE_PATTERN =null;
+    } else {
+      HISTORY_IGNORE_PATTERN = Pattern.compile(tmp);
+    }
+  }
 
   private final Device device;
   private final Map<String, Function> functions = new HashMap<String, Function>();
@@ -482,7 +491,7 @@ public class Readline {
         } else {
           String raw = interaction.line.toString();
           if (interaction.line.getSize() > 0) {
-            addToHistory(interaction.line.toArray());
+            addToHistory(interaction.line);
           }
           interaction.line.clear();
           interaction.conn.write("\n");
@@ -491,12 +500,16 @@ public class Readline {
       }
     }
 
-    private void addToHistory(int[] command) {
-      if (history.size() >= MAX_HISTORY_SIZE) {
-        // remove the last item
-        history.remove(MAX_HISTORY_SIZE - 1);
-      }
-      history.add(0, command);
+    private void addToHistory(LineBuffer cmdLine) {
+        if (HISTORY_IGNORE_PATTERN  != null  
+            && HISTORY_IGNORE_PATTERN.matcher(cmdLine.toString()).find()){
+          return;
+        }
+        if (history.size() >= MAX_HISTORY_SIZE) {
+          // remove the last item
+          history.remove(MAX_HISTORY_SIZE - 1);
+        }
+        history.add(0, cmdLine.toArray());
     }
   };
 }
