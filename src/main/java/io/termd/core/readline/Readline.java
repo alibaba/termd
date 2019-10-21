@@ -18,6 +18,7 @@ package io.termd.core.readline;
 
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
+import io.termd.core.spi.ConfigProvider;
 import io.termd.core.term.Device;
 import io.termd.core.term.TermInfo;
 import io.termd.core.tty.TtyConnection;
@@ -25,6 +26,7 @@ import io.termd.core.tty.TtyEvent;
 import io.termd.core.util.Logging;
 import io.termd.core.util.Vector;
 import io.termd.core.util.Helper;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,21 +41,6 @@ import java.util.regex.Pattern;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class Readline {
-
-  /**
-   * The max number of history item that will be saved in memory.
-   */
-  private static final int MAX_HISTORY_SIZE = Integer.getInteger("termd_max_history_size", 500);
-  private static final Pattern HISTORY_IGNORE_PATTERN;
-  static {
-    String tmp = System.getProperty("termd_history_ignore_pattern");//"\\s*history"
-    if (tmp == null || tmp.isEmpty()) {
-      HISTORY_IGNORE_PATTERN =null;
-    } else {
-      HISTORY_IGNORE_PATTERN = Pattern.compile(tmp);
-    }
-  }
-
   private final Device device;
   private final Map<String, Function> functions = new HashMap<String, Function>();
   private final EventQueue decoder;
@@ -501,13 +488,16 @@ public class Readline {
     }
 
     private void addToHistory(LineBuffer cmdLine) {
-        if (HISTORY_IGNORE_PATTERN  != null  
-            && HISTORY_IGNORE_PATTERN.matcher(cmdLine.toString()).find()){
+        final ConfigProvider config = Helper.getConfigProvider();
+        final Pattern historyIgnorePattern = config.getHistoryIgnorePattern();
+        if (historyIgnorePattern != null  
+            && historyIgnorePattern.matcher(cmdLine.toString()).find()){
           return;
         }
-        if (history.size() >= MAX_HISTORY_SIZE) {
+        final int historyMaxSize = config.getHistoryMaxSize();
+        if (history.size() >= historyMaxSize) {
           // remove the last item
-          history.remove(MAX_HISTORY_SIZE - 1);
+          history.remove(historyMaxSize - 1);
         }
         history.add(0, cmdLine.toArray());
     }

@@ -18,6 +18,7 @@ package io.termd.core.util;
 
 import io.termd.core.function.Consumer;
 import io.termd.core.function.IntConsumer;
+import io.termd.core.spi.ConfigProvider;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -293,5 +294,40 @@ public class Helper {
       }
     }
     return maxLen;
+  }
+  private static final class Hold4ConfigSPI {
+    static final ConfigProvider INST = loadService(ConfigProvider.class);
+  }
+
+  public static ConfigProvider getConfigProvider() {
+    return Hold4ConfigSPI.INST;
+  }
+  public static String  getConfig(String p , String defaultValue) {
+    return Hold4ConfigSPI.INST.get(p, defaultValue);
+  }
+
+  public  static int  getConfigInt(String p , int defaultValue) {
+       String tmp = Hold4ConfigSPI.INST.get(p, null);
+       if (tmp == null || tmp.isEmpty()) {
+           return defaultValue;
+       }
+       return Integer.parseInt(tmp);
+  }
+  
+  protected  static <T> T loadService(final Class<T> spiClass) {
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    if(classLoader == null ) {
+      classLoader = Helper.class.getClassLoader();
+    }
+    Iterator<T> iter = ServiceLoader.load(spiClass, classLoader).iterator();
+    if (!iter.hasNext() && (classLoader != Helper.class.getClassLoader())) {
+      iter = ServiceLoader.load(spiClass, Helper.class.getClassLoader()).iterator();
+    }
+    if (iter.hasNext()) {
+      final T o = iter.next();
+      Logging.READLINE.info("SPI {}={}", spiClass , o);
+      return o ;
+    }
+    throw new IllegalStateException("SPI not found!"+spiClass );
   }
 }
