@@ -42,9 +42,15 @@ import java.net.URL;
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
   private final String wsUri;
+  private final String httpResourcePath;
 
   public HttpRequestHandler(String wsUri) {
+      this(wsUri, "/io/termd/core/http");
+  }
+
+  public HttpRequestHandler(String wsUri, String httpResourcePath) {
     this.wsUri = wsUri;
+    this.httpResourcePath = httpResourcePath;
   }
 
   @Override
@@ -63,7 +69,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
       if ("/".equals(path)) {
         path = "/index.html";
       }
-      URL res = HttpTtyConnection.class.getResource("/io/termd/core/http" + path);
+      URL res = HttpTtyConnection.class.getResource(httpResourcePath + path);
       try {
         if (res != null) {
           DefaultFullHttpResponse fullResp = new DefaultFullHttpResponse(request.getProtocolVersion(), HttpResponseStatus.OK);

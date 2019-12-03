@@ -35,10 +35,16 @@ public class TtyServerInitializer extends ChannelInitializer<SocketChannel> {
 
   private final ChannelGroup group;
   private final Consumer<TtyConnection> handler;
+  private String httpResourcePath;
 
   public TtyServerInitializer(ChannelGroup group, Consumer<TtyConnection> handler) {
-    this.group = group;
-    this.handler = handler;
+    this(group, handler, null);
+  }
+
+  public TtyServerInitializer(ChannelGroup group, Consumer<TtyConnection> handler, String httpResourcePath) {
+      this.group = group;
+      this.handler = handler;
+      this.httpResourcePath = httpResourcePath;
   }
 
   @Override
@@ -47,7 +53,14 @@ public class TtyServerInitializer extends ChannelInitializer<SocketChannel> {
     pipeline.addLast(new HttpServerCodec());
     pipeline.addLast(new ChunkedWriteHandler());
     pipeline.addLast(new HttpObjectAggregator(64 * 1024));
-    pipeline.addLast(new HttpRequestHandler("/ws"));
+    HttpRequestHandler httpRequestHandler = null;
+        if (httpResourcePath == null) {
+            httpRequestHandler = new HttpRequestHandler("/ws");
+        } else {
+            httpRequestHandler = new HttpRequestHandler("/ws", httpResourcePath);
+        }
+
+    pipeline.addLast(httpRequestHandler);
     pipeline.addLast(new WebSocketServerProtocolHandler("/ws"));
     pipeline.addLast(new TtyWebSocketFrameHandler(group, handler));
   }

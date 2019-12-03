@@ -46,6 +46,7 @@ public class NettyWebsocketTtyBootstrap {
   private int port;
   private EventLoopGroup group;
   private Channel channel;
+  private String httpResourcePath;
 
   public NettyWebsocketTtyBootstrap() {
     this.host = "localhost";
@@ -70,6 +71,15 @@ public class NettyWebsocketTtyBootstrap {
     return this;
   }
 
+    public String getHttpResourcePath() {
+        return httpResourcePath;
+    }
+
+    public NettyWebsocketTtyBootstrap setHttpResourcePath(String httpResourcePath) {
+        this.httpResourcePath = httpResourcePath;
+        return this;
+    }
+
   public void start(Consumer<TtyConnection> handler, final Consumer<Throwable> doneHandler) {
     group = new NioEventLoopGroup();
 
@@ -77,7 +87,7 @@ public class NettyWebsocketTtyBootstrap {
     b.group(group)
         .channel(NioServerSocketChannel.class)
         .handler(new LoggingHandler(LogLevel.INFO))
-        .childHandler(new TtyServerInitializer(channelGroup, handler));
+        .childHandler(new TtyServerInitializer(channelGroup, handler, httpResourcePath));
 
     final ChannelFuture f = b.bind(host, port);
     f.addListener(new GenericFutureListener<Future<? super Void>>() {
