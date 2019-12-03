@@ -33,7 +33,11 @@ public class LineBuffer {
   private int size;
 
   public LineBuffer() {
-    data = new int[1000];
+    this(1000);
+  }
+
+  public LineBuffer(int cap) {
+      data = new int[cap];
   }
 
   private LineBuffer(LineBuffer that) {
@@ -100,7 +104,16 @@ public class LineBuffer {
     }
     data[cursor++] = cp;
     size++;
+    if (size >= data.length) {
+        resize();
+    }
     return this;
+  }
+
+  private void resize() {
+      int[] tmpData = new int[data.length * 2];
+      System.arraycopy(this.data, 0, tmpData, 0, data.length);
+      this.data = tmpData;
   }
 
   public LineStatus.Ext insertEscaped(int... codePoints) {
@@ -210,6 +223,10 @@ public class LineBuffer {
     if (cursor > size) {
       cursor = size;
     }
+  }
+
+  public int getCapacity() {
+    return this.data.length;
   }
 
   public int getCursor() {

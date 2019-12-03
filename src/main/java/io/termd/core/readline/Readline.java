@@ -292,7 +292,7 @@ public class Readline {
     void resize(int oldWith, int newWidth) {
 
       // Erase screen
-      LineBuffer abc = new LineBuffer();
+      LineBuffer abc = new LineBuffer(buffer.getCapacity());
       abc.insert(currentPrompt);
       abc.insert(buffer.toArray());
       abc.setCursor(currentPrompt.length() + buffer.getCursor());
@@ -372,11 +372,11 @@ public class Readline {
      * Redraw the current line.
      */
     public void redraw() {
-      LineBuffer toto = new LineBuffer();
+      LineBuffer toto = new LineBuffer(buffer.getCapacity());
       toto.insert(Helper.toCodePoints(currentPrompt));
       toto.insert(buffer.toArray());
       toto.setCursor(currentPrompt.length() + buffer.getCursor());
-      LineBuffer abc = new LineBuffer();
+      LineBuffer abc = new LineBuffer(toto.getCapacity());
       abc.update(toto, conn.stdoutHandler(), size.x());
     }
 
@@ -391,12 +391,12 @@ public class Readline {
     }
 
     private void refresh(LineBuffer update, int width) {
-      LineBuffer copy3 = new LineBuffer();
+      LineBuffer copy3 = new LineBuffer(update.getCapacity());
       final List<Integer> codePoints = new LinkedList<Integer>();
       copy3.insert(Helper.toCodePoints(currentPrompt));
       copy3.insert(buffer().toArray());
       copy3.setCursor(currentPrompt.length() + buffer().getCursor());
-      LineBuffer copy2 = new LineBuffer();
+      LineBuffer copy2 = new LineBuffer(copy3.getCapacity());
       copy2.insert(Helper.toCodePoints(currentPrompt));
       copy2.insert(update.toArray());
       copy2.setCursor(currentPrompt.length() + update.getCursor());
