@@ -111,6 +111,10 @@ public enum Option {
       if (parameters.length == 4) {
         int width = ((parameters[0] & 0xff) << 8) + (parameters[1] & 0xff);
         int height = ((parameters[2] & 0xff) << 8) + (parameters[3] & 0xff);
+
+        if (width == 0 || height == 0) { // ignore https://github.com/alibaba/termd/issues/28
+          return;
+        }
         session.handler.onSize(width, height);
       }
     }
