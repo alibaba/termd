@@ -16,9 +16,9 @@
 
 package io.termd.core.readline;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,7 +30,19 @@ import java.util.List;
 public class Keymap {
 
   public static Keymap getDefault() {
-    InputStream inputrc = Keymap.class.getResourceAsStream("inputrc");
+    InputStream inputrc = null;
+    try {
+        inputrc = Keymap.class.getResourceAsStream("inputrc");
+    } finally {
+        if (inputrc != null) {
+            try {
+                inputrc.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+    }
+
     return new Keymap(inputrc);
   }
 
