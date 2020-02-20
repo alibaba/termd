@@ -63,7 +63,7 @@ public class NettyIoAcceptor extends AbstractCloseable implements IoAcceptor {
   public NettyIoAcceptor(NettyIoServiceFactory factory, final IoHandler handler) {
     this.factory = factory;
     this.handler = handler;
-    channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);;
+    channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
     bootstrap.group(factory.eventLoopGroup)
         .channel(NioServerSocketChannel.class)
         .option(ChannelOption.SO_BACKLOG, 100)
