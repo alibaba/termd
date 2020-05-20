@@ -45,17 +45,17 @@ public class WebSocketTtyConnection extends HttpTtyConnection {
   private Set<WebSocketChannel> readonlyChannels = new HashSet<WebSocketChannel>();
 
   @Override
-  protected void write(byte[] buffer) {
+  protected void write(byte[] buffer, int offset, int length) {
     if (isOpen()) {
-      sendBinary(buffer, webSocketChannel);
+      sendBinary(ByteBuffer.wrap(buffer, offset, length), webSocketChannel);
     }
     for (WebSocketChannel channel : readonlyChannels) {
-      sendBinary(buffer, channel);
+      sendBinary(ByteBuffer.wrap(buffer, offset, length), channel);
     }
   }
 
-  private void sendBinary(byte[] buffer, WebSocketChannel webSocketChannel) {
-    WebSockets.sendBinary(ByteBuffer.wrap(buffer), webSocketChannel, null);
+  private void sendBinary(ByteBuffer buffer, WebSocketChannel webSocketChannel) {
+    WebSockets.sendBinary(buffer, webSocketChannel, null);
   }
 
   @Override

@@ -20,14 +20,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
 import io.termd.core.io.BinaryDecoder;
-import io.termd.core.io.BinaryEncoder;
-import io.termd.core.tty.TtyConnectionSupport;
-import io.termd.core.tty.TtyEvent;
-import io.termd.core.tty.TtyEventDecoder;
-import io.termd.core.tty.TtyOutputMode;
+import io.termd.core.io.BufferBinaryEncoder;
+import io.termd.core.tty.*;
+import io.termd.core.util.Helper;
 import io.termd.core.util.Vector;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.nio.charset.Charset;
 import java.util.Map;
 
@@ -52,6 +52,7 @@ import java.util.Map;
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author <a href="mailto:matejonnet@gmail.com">Matej Lazar</a>
+ * @author gongdewei 2020/05/20
  */
 public abstract class HttpTtyConnection extends TtyConnectionSupport {
 
@@ -62,10 +63,12 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
   private Consumer<Vector> sizeHandler;
   private final TtyEventDecoder eventDecoder;
   private final BinaryDecoder decoder;
-  private final Consumer<int[]> stdout;
+  private final Consumer<IntBuffer> stdout;
+  private final Consumer<int[]> stdoutWrapper;
   private Consumer<Void> closeHandler;
   private Consumer<String> termHandler;
   private long lastAccessedTime = System.currentTimeMillis();
+  private final IntBuffer codePointBuf = IntBuffer.allocate(8192);
 
   public HttpTtyConnection() {
     this(Charset.forName("UTF-8"), DEFAULT_SIZE);
@@ -76,12 +79,38 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
     this.size = size;
     this.eventDecoder = new TtyEventDecoder(3, 26, 4);
     this.decoder = new BinaryDecoder(512, charset, eventDecoder);
-    this.stdout = new TtyOutputMode(new BinaryEncoder(charset, new Consumer<byte[]>() {
+    this.stdout = new BufferTtyOutputMode(new BufferBinaryEncoder(charset, new Consumer<ByteBuffer>() {
       @Override
-      public void accept(byte[] bytes) {
-        write(bytes);
+      public void accept(ByteBuffer data) {
+        write(data.array(), data.position(), data.remaining());
       }
     }));
+    this.stdoutWrapper = new Consumer<int[]>() {
+      @Override
+      public void accept(int[] data) {
+        stdout.accept(IntBuffer.wrap(data));
+      }
+    };
+  }
+
+  @Override
+  public TtyConnection write(String s) {
+    synchronized (this) {
+      int count = Helper.codePointCount(s);
+      IntBuffer buffer = null;
+      if (count < codePointBuf.capacity()) {
+        buffer = codePointBuf;
+      } else {
+        buffer = IntBuffer.allocate(count);
+      }
+
+      buffer.clear();
+      Helper.toCodePoints(s, buffer);
+      buffer.flip();
+
+      stdout.accept(buffer);
+      return this;
+    }
   }
 
   @Override
@@ -104,7 +133,11 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
     return "vt100";
   }
 
-  protected abstract void write(byte[] buffer);
+  protected void write(byte[] buffer) {
+    this.write(buffer, 0, buffer.length);
+  }
+
+  protected abstract void write(byte[] buffer, int offset, int length);
 
   /**
    * Special case to handle tty events.
@@ -195,7 +228,8 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
   }
 
   public Consumer<int[]> stdoutHandler() {
-    return stdout;
+    //TODO replace with Consumer<IntBuffer>
+    return stdoutWrapper;
   }
 
   @Override

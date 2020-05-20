@@ -17,7 +17,8 @@
 package io.termd.core.http.netty;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
@@ -26,6 +27,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.termd.core.function.Consumer;
 import io.termd.core.http.HttpTtyConnection;
 import io.termd.core.tty.TtyConnection;
+import io.termd.core.util.ByteBufPool;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,10 +40,14 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   private final Consumer<TtyConnection> handler;
   private ChannelHandlerContext context;
   private HttpTtyConnection conn;
+  private final ByteBufPool byteBufPool;
+  private Class[] removingHandlerClasses;
 
-  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler) {
+  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler, Class... removingHandlerClasses) {
     this.group = group;
     this.handler = handler;
+    this.removingHandlerClasses = removingHandlerClasses;
+    byteBufPool = new ByteBufPool();
   }
 
   @Override
@@ -53,16 +59,42 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-      ctx.pipeline().remove(HttpRequestHandler.class);
+      if (removingHandlerClasses != null) {
+        for (Class handlerClass : removingHandlerClasses) {
+          ctx.pipeline().remove(handlerClass);
+        }
+      }
       group.add(ctx.channel());
       conn = new HttpTtyConnection() {
         @Override
-        protected void write(byte[] buffer) {
-          ByteBuf byteBuf = Unpooled.buffer();
-          byteBuf.writeBytes(buffer);
-          if (context != null) {
-            context.writeAndFlush(new TextWebSocketFrame(byteBuf));
+        protected void write(byte[] buffer, int offset, int length) {
+
+          int start = offset;
+          int remain = length;
+          while (remain > 0) {
+            if (context == null) {
+              break;
+            }
+
+            //ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer(remain<=32?32: (remain<=64?64: byteBufSize));
+            final ByteBuf byteBuf = byteBufPool.get();
+
+            //write segment
+            int size = Math.min(remain, byteBuf.writableBytes());
+            byteBuf.writeBytes(buffer, start, size);
+            if (context != null) {
+              context.writeAndFlush(new TextWebSocketFrame(byteBuf)).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                  byteBufPool.put(byteBuf);
+                }
+              });
+            }
+
+            start += size;
+            remain -= size;
           }
+
         }
 
         @Override
