@@ -19,10 +19,10 @@ package io.termd.core.util;
 import io.termd.core.function.Consumer;
 import io.termd.core.function.IntConsumer;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
 
@@ -53,21 +53,55 @@ public class Helper {
    * @return the code points
    */
   public static int[] toCodePoints(String s) {
-    List<Integer> codePoints = new ArrayList<Integer>();
-    for (int offset = 0; offset < s.length();) {
+    int count = Character.codePointCount(s, 0, s.length());
+    int[] codePoints = new int[count];
+    for (int offset = 0, i = 0; i < count && offset < s.length();i++) {
       int cp = s.codePointAt(offset);
-      codePoints.add(cp);
+      codePoints[i] = cp;
       offset += Character.charCount(cp);
     }
-    return convert(codePoints);
+    return codePoints;
+
+//    List<Integer> codePoints = new ArrayList<Integer>();
+//    for (int offset = 0; offset < s.length();) {
+//      int cp = s.codePointAt(offset);
+//      codePoints.add(cp);
+//      offset += Character.charCount(cp);
+//    }
+//    return convert(codePoints);
   }
 
   /**
-   * Code point to string conversion.
+   * Convert the string to an array of code points.
+   * Notice: Ensure out buffer capacity >= Helper.codePointCount(s)
    *
-   * @param codePoints the code points
-   * @return the corresponding string
+   * @param s the string to convert
+   * @param out the buffer to write code points
    */
+  public static void toCodePoints(String s, IntBuffer out) {
+    //Assert out.remaining() >= codePointCount
+    for (int offset = 0; offset < s.length(); ) {
+      int cp = s.codePointAt(offset);
+      out.put(cp);
+      offset += Character.charCount(cp);
+    }
+  }
+
+  /**
+   * Get code points count of string
+   * @param s
+   * @return
+   */
+  public static int codePointCount(String s) {
+    return Character.codePointCount(s, 0, s.length());
+  }
+
+    /**
+     * Code point to string conversion.
+     *
+     * @param codePoints the code points
+     * @return the corresponding string
+     */
   public static String fromCodePoints(int[] codePoints) {
     return new String(codePoints, 0, codePoints.length);
   }
