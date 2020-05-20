@@ -286,7 +286,7 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
     synchronized (this) {
       int count = Helper.codePointCount(s);
       IntBuffer buffer = null;
-      if (count < codePointBuf.capacity()) {
+      if (count <= codePointBuf.capacity()) {
         buffer = codePointBuf;
       } else {
         buffer = IntBuffer.allocate(count);
