@@ -77,18 +77,28 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
             }
 
             //ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer(remain<=32?32: (remain<=64?64: byteBufSize));
-            final ByteBuf byteBuf = byteBufPool.get();
+            final ByteBuf byteBuf = byteBufPool.get(50, TimeUnit.MILLISECONDS);
+            boolean done = false;
+            int size = 0;
 
-            //write segment
-            int size = Math.min(remain, byteBuf.writableBytes());
-            byteBuf.writeBytes(buffer, start, size);
-            if (context != null) {
-              context.writeAndFlush(new TextWebSocketFrame(byteBuf)).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                  byteBufPool.put(byteBuf);
-                }
-              });
+            try {
+              //write segment
+              size = Math.min(remain, byteBuf.writableBytes());
+              byteBuf.writeBytes(buffer, start, size);
+              if (context != null) {
+                context.writeAndFlush(new TextWebSocketFrame(byteBuf)).addListener(new ChannelFutureListener() {
+                  @Override
+                  public void operationComplete(ChannelFuture future) throws Exception {
+                    byteBufPool.put(byteBuf);
+                  }
+                });
+                done = true;
+              }
+            } finally {
+              if (!done) {
+                //discard
+                byteBufPool.discard(byteBuf);
+              }
             }
 
             start += size;
@@ -116,6 +126,7 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
           if (context != null) {
             context.close();
           }
+          byteBufPool.release();
         }
       };
       handler.accept(conn);

@@ -61,17 +61,26 @@ public class NettyTelnetConnection extends TelnetConnection {
       int remain = len;
       while (remain > 0) {
 //        ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer(remain<=32?32: (remain<=64?64: byteBufSize));
-        final ByteBuf byteBuf = byteBufPool.get();
+        final ByteBuf byteBuf = byteBufPool.get(50, TimeUnit.MILLISECONDS);
+        boolean done = false;
+        int size = 0;
 
-        //write segment
-        int size = Math.min(remain, byteBuf.writableBytes());
-        byteBuf.writeBytes(data, start, size);
-        context.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
-          @Override
-          public void operationComplete(ChannelFuture future) throws Exception {
-            byteBufPool.put(byteBuf);
+        try {
+          //write segment
+          size = Math.min(remain, byteBuf.writableBytes());
+          byteBuf.writeBytes(data, start, size);
+          context.writeAndFlush(byteBuf).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+              byteBufPool.put(byteBuf);
+            }
+          });
+          done = true;
+        } finally {
+          if (!done) {
+            byteBufPool.discard(byteBuf);
           }
-        });
+        }
 
         start += size;
         remain -= size;
@@ -81,6 +90,7 @@ public class NettyTelnetConnection extends TelnetConnection {
   @Override
   protected void onClose() {
     super.onClose();
+    byteBufPool.release();
   }
 
   @Override
