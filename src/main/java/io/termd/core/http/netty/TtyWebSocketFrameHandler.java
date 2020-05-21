@@ -40,14 +40,21 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   private final Consumer<TtyConnection> handler;
   private ChannelHandlerContext context;
   private HttpTtyConnection conn;
+  private Class removingHandlerClass;
   private final ByteBufPool byteBufPool;
-  private Class[] removingHandlerClasses;
 
-  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler, Class... removingHandlerClasses) {
+  /**
+   * Create TtyWebSocketFrameHandler
+   *
+   * @param group
+   * @param handler tty connection handler
+   * @param removingHandlerClass  removing specify handler class after protocol upgrade
+   */
+  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler, Class removingHandlerClass) {
     this.group = group;
     this.handler = handler;
-    this.removingHandlerClasses = removingHandlerClasses;
-    byteBufPool = new ByteBufPool();
+    this.removingHandlerClass = removingHandlerClass;
+    this.byteBufPool = new ByteBufPool();
   }
 
   @Override
@@ -59,10 +66,8 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-      if (removingHandlerClasses != null) {
-        for (Class handlerClass : removingHandlerClasses) {
-          ctx.pipeline().remove(handlerClass);
-        }
+      if (removingHandlerClass != null) {
+        ctx.pipeline().remove(removingHandlerClass);
       }
       group.add(ctx.channel());
       conn = new HttpTtyConnection() {
