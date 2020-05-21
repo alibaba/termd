@@ -70,20 +70,23 @@ public class BufferBinaryEncoder implements Consumer<IntBuffer> {
       capacity += Character.charCount(array[i]);
     }
 
-    //convert code points to chars
-    CharBuffer charBuffer = getCharBuffer(capacity);
-    for (int i = offset; i < limit; i++) {
-      int size = Character.toChars(array[i], charsBuf, 0);
-      charBuffer.put(charsBuf, 0, size);
+    //charsetEncoder/charsBuf/cachedBuffer are not thread-safe
+    synchronized (this) {
+      //convert code points to chars
+      CharBuffer charBuffer = getCharBuffer(capacity);
+      for (int i = offset; i < limit; i++) {
+        int size = Character.toChars(array[i], charsBuf, 0);
+        charBuffer.put(charsBuf, 0, size);
+      }
+      charBuffer.flip();
+
+      //encode chars to bytes
+      ByteBuffer byteBuffer = getByteBuffer(getByteCapacity(capacity));
+      charsetEncoder.encode(charBuffer, byteBuffer, true);
+      byteBuffer.flip();
+
+      onByte.accept(byteBuffer);
     }
-    charBuffer.flip();
-
-    //encode chars to bytes
-    ByteBuffer byteBuffer = getByteBuffer(getByteCapacity(capacity));
-    charsetEncoder.encode(charBuffer, byteBuffer, true);
-    byteBuffer.flip();
-
-    onByte.accept(byteBuffer);
   }
 
   private CharBuffer getCharBuffer(int capacity) {
