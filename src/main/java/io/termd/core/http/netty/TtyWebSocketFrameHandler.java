@@ -38,10 +38,12 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   private final Consumer<TtyConnection> handler;
   private ChannelHandlerContext context;
   private HttpTtyConnection conn;
+  private Class[] removingHandlerClasses;
 
-  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler) {
+  public TtyWebSocketFrameHandler(ChannelGroup group, Consumer<TtyConnection> handler, Class... removingHandlerClasses) {
     this.group = group;
     this.handler = handler;
+    this.removingHandlerClasses = removingHandlerClasses;
   }
 
   @Override
@@ -53,7 +55,11 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
     if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-      ctx.pipeline().remove(HttpRequestHandler.class);
+      if (removingHandlerClasses != null) {
+        for (Class handlerClass : removingHandlerClasses) {
+          ctx.pipeline().remove(handlerClass);
+        }
+      }
       group.add(ctx.channel());
       conn = new HttpTtyConnection() {
         @Override
