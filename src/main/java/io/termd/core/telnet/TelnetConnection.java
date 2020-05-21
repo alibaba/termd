@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
 * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+* @author gongdewei 2020/05/20
 */
 public abstract class TelnetConnection {
 
@@ -83,23 +84,15 @@ public abstract class TelnetConnection {
     send(new byte[]{BYTE_IAC, BYTE_WILL, option.code});
   }
 
-  private void rawWrite(byte[] data, int offset, int length) {
-    if (length > 0) {
-      if (offset == 0 && length == data.length) {
-        send(data);
-      } else {
-        byte[] chunk = new byte[length];
-        System.arraycopy(data, offset, chunk, 0, chunk.length);
-        send(chunk);
-      }
-    }
-  }
-
   protected abstract void execute(Runnable task);
 
   protected abstract void schedule(Runnable task, long delay, TimeUnit unit);
 
-  protected abstract void send(byte[] data);
+  protected abstract void send(byte[] data, int offset, int len);
+
+  protected void send(byte[] data) {
+    this.send(data, 0, data.length);
+  }
 
   public void receive(byte[] data) {
     for (byte b : data) {
@@ -108,7 +101,6 @@ public abstract class TelnetConnection {
     flushDataIfNecessary();
   }
 
-
   /**
    * Write data to the client, escaping data if necessary or truncating it. The original buffer can
    * be mutated if incorrect data is provided.
@@ -116,17 +108,30 @@ public abstract class TelnetConnection {
    * @param data the data to write
    */
   public final void write(byte[] data) {
+    this.write(data, 0, data.length);
+  }
+
+  /**
+   * Write data to the client, escaping data if necessary or truncating it. The original buffer can
+   * be mutated if incorrect data is provided.
+   *
+   * @param data the data to write
+   * @param offset
+   * @param len
+   */
+  public final void write(byte[] data, int offset, int len) {
     if (sendBinary) {
       // actually the logic here never get executed.
       int prev = 0;
-      for (int i = 0;i < data.length;i++) {
+      int end = offset+len;
+      for (int i = offset;i < end;i++) {
         if (data[i] == -1) {
-          rawWrite(data, prev, i - prev);
+          send(data, prev, i - prev);
           send(new byte[]{-1, -1});
           prev = i + 1;
         }
       }
-      rawWrite(data, prev, data.length - prev);
+      send(data, prev, data.length - prev);
     } else {
       // Not fully understand the logic below, but
       // Chinese characters will be truncated by the following logic.
@@ -136,7 +141,7 @@ public abstract class TelnetConnection {
 //      for (int i = 0;i < data.length;i++) {
 //        data[i] = (byte)(data[i] & 0x7F);
 //      }
-      send(data);
+      send(data, offset, len);
     }
   }
 

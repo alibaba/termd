@@ -24,6 +24,7 @@ import io.termd.core.function.Consumer;
  */
 public class TtyOutputMode implements Consumer<int[]> {
 
+  private static final int[] CRLF = {'\r', '\n'};
   private final Consumer<int[]> readHandler;
 
   public TtyOutputMode(Consumer<int[]> readHandler) {
@@ -43,7 +44,7 @@ public class TtyOutputMode implements Consumer<int[]> {
           if (ptr > prev) {
             sendChunk(data, prev, ptr);
           }
-          readHandler.accept(new int[]{'\r','\n'});
+          readHandler.accept(CRLF);
           prev = ++ptr;
         } else {
           ptr++;

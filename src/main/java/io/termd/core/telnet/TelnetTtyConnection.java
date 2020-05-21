@@ -18,17 +18,15 @@ package io.termd.core.telnet;
 
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
-import io.termd.core.tty.ReadBuffer;
-import io.termd.core.tty.TtyEvent;
-import io.termd.core.tty.TtyEventDecoder;
-import io.termd.core.tty.TtyOutputMode;
+import io.termd.core.io.BufferBinaryEncoder;
+import io.termd.core.tty.*;
 import io.termd.core.util.Helper;
 import io.termd.core.util.Vector;
 import io.termd.core.io.BinaryDecoder;
-import io.termd.core.io.BinaryEncoder;
 import io.termd.core.io.TelnetCharset;
-import io.termd.core.tty.TtyConnection;
 
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +35,7 @@ import java.util.concurrent.TimeUnit;
  * A telnet handler that implements {@link io.termd.core.tty.TtyConnection}.
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @author gongdewei 2020/05/20
  */
 public final class TelnetTtyConnection extends TelnetHandler implements TtyConnection {
 
@@ -63,10 +62,12 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
   });
 
   private final BinaryDecoder decoder;
-  private final BinaryEncoder encoder;
+  private final BufferBinaryEncoder encoder;
 
-  private final Consumer<int[]> stdout;
+  private final Consumer<IntBuffer> stdout;
+  private final Consumer<int[]> stdoutWrapper;
   private final Consumer<TtyConnection> handler;
+  private final IntBuffer codePointBuf = IntBuffer.allocate(8192);
   private long lastAccessedTime = System.currentTimeMillis();
 
   public TelnetTtyConnection(boolean inBinary, boolean outBinary, Charset charset, Consumer<TtyConnection> handler) {
@@ -76,13 +77,19 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
     this.handler = handler;
     this.size = new Vector();
     this.decoder = new BinaryDecoder(512, TelnetCharset.INSTANCE, readBuffer);
-    this.encoder = new BinaryEncoder(charset, new Consumer<byte[]>() {
+    this.encoder = new BufferBinaryEncoder(charset, new Consumer<ByteBuffer>() {
       @Override
-      public void accept(byte[] data) {
-        conn.write(data);
+      public void accept(ByteBuffer data) {
+        conn.write(data.array(), data.position(), data.remaining());
       }
     });
-    this.stdout = new TtyOutputMode(encoder);
+    this.stdout = new BufferTtyOutputMode(encoder);
+    this.stdoutWrapper = new Consumer<int[]>() {
+      @Override
+      public void accept(int[] data) {
+        stdout.accept(IntBuffer.wrap(data));
+      }
+    };
   }
 
   @Override
@@ -243,7 +250,8 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
 
   @Override
   public Consumer<int[]> stdoutHandler() {
-    return stdout;
+    //TODO replace with Consumer<IntBuffer>
+    return stdoutWrapper;
   }
 
   @Override
@@ -275,8 +283,21 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
 
   @Override
   public TtyConnection write(String s) {
-    int[] codePoints = Helper.toCodePoints(s);
-    stdoutHandler().accept(codePoints);
-    return this;
+    synchronized (this) {
+      int count = Helper.codePointCount(s);
+      IntBuffer buffer = null;
+      if (count <= codePointBuf.capacity()) {
+        buffer = codePointBuf;
+      } else {
+        buffer = IntBuffer.allocate(count);
+      }
+
+      buffer.clear();
+      Helper.toCodePoints(s, buffer);
+      buffer.flip();
+
+      stdout.accept(buffer);
+      return this;
+    }
   }
 }
