@@ -62,6 +62,6 @@ public class TtyServerInitializer extends ChannelInitializer<SocketChannel> {
 
     pipeline.addLast(httpRequestHandler);
     pipeline.addLast(new WebSocketServerProtocolHandler("/ws"));
-    pipeline.addLast(new TtyWebSocketFrameHandler(group, handler));
+    pipeline.addLast(new TtyWebSocketFrameHandler(group, handler, HttpRequestHandler.class));
   }
 }
