@@ -25,12 +25,26 @@ import java.util.Map;
  * A term info database.
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ *
+ * 修改人：柳志崇
+ * 修改时间：2020-05-27
+ * 修改备注：优先加载classpath://terminfo.src文件，找不到则加载默认的classpath://io/termd/core/term/terminfo.src文件。
+ *          通过这种方式可以结合项目中的实际需要定制加载terminfo.src文件，以达到节约内存的目的。
+ *          (加载默认的classpath://io/termd/core/term/terminfo.src文件到JVM约占用11M内存)
+ *
+ *
  */
 public class TermInfo {
 
   private static TermInfo loadDefault() {
     try {
-      InputStream in = TermInfo.class.getResourceAsStream("terminfo.src");
+      //the first find path is classpath://terminfo.src
+      InputStream in = TermInfo.class.getClassLoader().getResourceAsStream("terminfo.src");
+      if(null==in){
+        //the second find path is classpath://io/termd/core/term/terminfo.src
+        in = TermInfo.class.getResourceAsStream("terminfo.src");
+      }
+
       TermInfoParser parser = new TermInfoParser(new InputStreamReader(in, "US-ASCII"));
       TermInfoBuilder builder = new TermInfoBuilder();
       parser.parseDatabase(builder);
