@@ -18,8 +18,6 @@ package io.termd.core.readline;
 
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
-import io.termd.core.term.Device;
-import io.termd.core.term.TermInfo;
 import io.termd.core.tty.TtyConnection;
 import io.termd.core.tty.TtyEvent;
 import io.termd.core.util.Logging;
@@ -31,7 +29,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Make this class thread safe as SSH will access this class with different threds [sic].
@@ -45,7 +42,7 @@ public class Readline {
    */
   private static final int MAX_HISTORY_SIZE = 500;
 
-  private final Device device;
+  // private final Device device;
   private final Map<String, Function> functions = new HashMap<String, Function>();
   private final EventQueue decoder;
   private Interaction interaction;
@@ -53,7 +50,8 @@ public class Readline {
   private List<int[]> history;
 
   public Readline(Keymap keymap) {
-    this.device = TermInfo.defaultInfo().getDevice("xterm"); // For now use xterm
+    // https://github.com/alibaba/termd/issues/42
+    // this.device = TermInfo.defaultInfo().getDevice("xterm"); // For now use xterm
     this.decoder = new EventQueue(keymap);
     this.history = new ArrayList<int[]>();
     addFunction(ACCEPT_LINE);
