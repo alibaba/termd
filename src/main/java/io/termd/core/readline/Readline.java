@@ -47,7 +47,7 @@ public class Readline {
   private final EventQueue decoder;
   private Interaction interaction;
   private Vector size;
-  private List<int[]> history;
+  private volatile List<int[]> history;
 
   public Readline(Keymap keymap) {
     // https://github.com/alibaba/termd/issues/42
@@ -489,12 +489,22 @@ public class Readline {
       }
     }
 
-    private void addToHistory(int[] command) {
-      if (history.size() >= MAX_HISTORY_SIZE) {
-        // remove the last item
-        history.remove(MAX_HISTORY_SIZE - 1);
+      private void addToHistory(int[] command) {
+          // copy and save. https://github.com/alibaba/termd/issues/44
+          synchronized (Readline.class) {
+              List<int[]> tmp = new ArrayList<int[]>(history.size());
+              // add to first
+              tmp.add(command);
+
+              for (int[] c : history) {
+                  tmp.add(c);
+                  if (tmp.size() >= MAX_HISTORY_SIZE) {
+                      break;
+                  }
+              }
+              history = tmp;
+          }
       }
-      history.add(0, command);
-    }
+
   };
 }
