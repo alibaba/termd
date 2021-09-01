@@ -279,4 +279,8 @@ public final class TelnetTtyConnection extends TelnetHandler implements TtyConne
     stdoutHandler().accept(codePoints);
     return this;
   }
+
+  public TelnetConnection getTelnetConnection() {
+      return this.conn;
+  }
 }

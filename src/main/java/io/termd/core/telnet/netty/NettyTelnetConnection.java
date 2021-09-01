@@ -61,4 +61,9 @@ public class NettyTelnetConnection extends TelnetConnection {
   public void close() {
     context.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
   }
+
+  public ChannelHandlerContext channelHandlerContext() {
+      return context;
+  }
+
 }
