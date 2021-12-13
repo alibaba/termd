@@ -43,7 +43,7 @@
   <properties>
     <version.org.slf4j>1.7.21</version.org.slf4j>
     <netty.version>4.1.71.Final</netty.version>
-    <jackson.version>2.7.9.4</jackson.version>
+    <jackson.version>2.9.10.8</jackson.version>
 
     <!-- maven-compiler-plugin -->
     <maven.compiler.target>1.6</maven.compiler.target>
