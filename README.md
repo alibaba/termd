@@ -10,6 +10,12 @@ An open source library for writing terminal applications in Java under ASL 2.0, 
 mvn clean package -Dmaven.test.skip -DskipTests
 ```
 
+deploy
+
+```
+mvn clean deploy -DskipTests -P release
+```
+
 
 ### Consuming the lib
 
