@@ -10,7 +10,7 @@
 
   <groupId>com.alibaba.middleware</groupId>
   <artifactId>termd-core</artifactId>
-  <version>1.1.7.13</version>
+  <version>1.1.7.14</version>
   <packaging>jar</packaging>
   <modelVersion>4.0.0</modelVersion>
 
@@ -31,6 +31,7 @@
     <connection>scm:git:git@github.com:alibaba/termd.git</connection>
     <developerConnection>scm:git:git@github.com:alibaba/termd.git</developerConnection>
     <url>https://github.com/alibaba/termd</url>
+    
   </scm>
 
   <developers>
@@ -44,7 +45,7 @@
   <properties>
     <version.org.slf4j>1.7.21</version.org.slf4j>
     <netty.version>4.1.112.Final</netty.version>
-    <jackson.version>2.12.7.2</jackson.version>
+    <jackson.version>2.15.4</jackson.version>
 
     <!-- maven-compiler-plugin -->
     <maven.compiler.target>1.8</maven.compiler.target>
