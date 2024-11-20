@@ -16,11 +16,8 @@
 
 package io.termd.core.http.websocket.server;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import io.termd.core.pty.Status;
 
 import java.io.IOException;
@@ -28,15 +25,17 @@ import java.io.IOException;
 /**
  * @author <a href="mailto:matejonnet@gmail.com">Matej Lazar</a>
  */
-class TaskStatusUpdateEventDeserializer extends JsonDeserializer<TaskStatusUpdateEvent> {
-  @Override
-  public TaskStatusUpdateEvent deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-    JsonNode node = jp.getCodec().readTree(jp);
-    String taskId = node.get("taskId").asText();
-    String oldStatus = node.get("oldStatus").asText();
-    String newStatus = node.get("newStatus").asText();
-    String context = node.get("context").asText();
+class TaskStatusUpdateEventDeserializer {
 
-    return new TaskStatusUpdateEvent(taskId, Status.valueOf(oldStatus), Status.valueOf(newStatus), context);
-  }
+    public TaskStatusUpdateEvent deserialize(String jsonStr) throws IOException {
+        JSONObject node = JSON.parseObject(jsonStr);
+
+        String taskId = node.getString("taskId");
+        String oldStatus = node.getString("oldStatus");
+        String newStatus = node.getString("newStatus");
+        String context = node.getString("context");
+
+        return new TaskStatusUpdateEvent(taskId, Status.valueOf(oldStatus), Status.valueOf(newStatus), context);
+    }
 }
+

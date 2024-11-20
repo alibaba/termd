@@ -16,7 +16,7 @@
 
 package io.termd.core.tty;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.fastjson2.JSON;
 import org.junit.After;
 
 import javax.websocket.ClientEndpointConfig;
@@ -103,12 +103,11 @@ import java.util.concurrent.CountDownLatch;
 
   @Override
   protected void assertWrite(String s) throws Exception {
-    Map<String, String> msg = new HashMap<String, String>();
-    msg.put("action", "read");
-    msg.put("data", s);
-    ObjectMapper mapper = new ObjectMapper();
-    String json = mapper.writeValueAsString(msg);
-    session.getBasicRemote().sendText(json);
+      Map<String, String> msg = new HashMap<>();
+      msg.put("action", "read");
+      msg.put("data", s);
+      String json = JSON.toJSONString(msg);
+      session.getBasicRemote().sendText(json);
   }
 
   @Override
@@ -141,13 +140,12 @@ import java.util.concurrent.CountDownLatch;
 
   @Override
   protected void resize(int width, int height) throws Exception {
-    Map<String, Object> msg = new HashMap<String, Object>();
-    msg.put("action", "resize");
-    msg.put("cols", width);
-    msg.put("rows", height);
-    ObjectMapper mapper = new ObjectMapper();
-    String json = mapper.writeValueAsString(msg);
-    session.getBasicRemote().sendText(json);
+      Map<String, Object> msg = new HashMap<>();
+      msg.put("action", "resize");
+      msg.put("cols", width);
+      msg.put("rows", height);
+      String json = JSON.toJSONString(msg);
+      session.getBasicRemote().sendText(json);
   }
 
   @Override

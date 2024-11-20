@@ -16,8 +16,8 @@
 
 package io.termd.core.http.websocket.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
 import io.termd.core.pty.PtyMaster;
@@ -154,19 +154,17 @@ class Term {
         final Consumer<TaskStatusUpdateEvent> statusUpdateListener = new Consumer<TaskStatusUpdateEvent>() {
           @Override
           public void accept(TaskStatusUpdateEvent event) {
-            Map<String, Object> statusUpdate = new HashMap<String, Object>();
-            statusUpdate.put("action", "status-update");
-            statusUpdate.put("event", event);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            try {
-              String message = objectMapper.writeValueAsString(statusUpdate);
-              WebSockets.sendText(message, webSocketChannel, null);
-            } catch (JsonProcessingException e) {
-              log.error("Cannot write object to JSON", e);
-              String errorMessage = "Cannot write object to JSON: " + e.getMessage();
-              WebSockets.sendClose(CloseMessage.UNEXPECTED_ERROR, errorMessage, webSocketChannel, null);
-            }
+              Map<String, Object> statusUpdate = new HashMap<>();
+              statusUpdate.put("action", "status-update");
+              statusUpdate.put("event", event);
+              try {
+                  String message = JSON.toJSONString(statusUpdate);
+                  WebSockets.sendText(message, webSocketChannel, null);
+              } catch (JSONException e) {
+                  log.error("Cannot write object to JSON", e);
+                  String errorMessage = "Cannot write object to JSON: " + e.getMessage();
+                  WebSockets.sendClose(CloseMessage.UNEXPECTED_ERROR, errorMessage, webSocketChannel, null);
+              }
           }
         };
 

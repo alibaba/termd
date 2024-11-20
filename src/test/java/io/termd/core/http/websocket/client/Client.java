@@ -16,8 +16,9 @@
 
 package io.termd.core.http.websocket.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
+import com.alibaba.fastjson2.JSONObject;
 import io.termd.core.function.Consumer;
 import io.termd.core.function.Supplier;
 import io.termd.core.http.websocket.server.TaskStatusUpdateEvent;
@@ -168,24 +169,23 @@ public class Client {
   public static Client connectStatusListenerClient(String webSocketUrl, final Consumer<TaskStatusUpdateEvent> onStatusUpdate) {
     Client client = Client.initializeDefault();
     Consumer<String> responseConsumer = new Consumer<String>() {
-      @Override
-      public void accept(String text) {
-        log.trace("Decoding response: {}", text);
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonObject = null;
-        try {
-          jsonObject = mapper.readTree(text);
-        } catch (IOException e) {
-          log.error("Cannot read JSON string: " + text, e);
+        public void accept(String text) {
+            log.trace("Decoding response: {}", text);
+            JSONObject jsonObject = null;
+            try {
+                jsonObject = JSON.parseObject(text);
+            } catch (JSONException e) {
+                log.error("Cannot read JSON string: " + text, e);
+                return;
+            }
+            try {
+                JSONObject eventJson = jsonObject.getJSONObject("event");
+                TaskStatusUpdateEvent taskStatusUpdateEvent = TaskStatusUpdateEvent.fromJson(eventJson.toString());
+                onStatusUpdate.accept(taskStatusUpdateEvent);
+            } catch (Exception e) {
+                log.error("Cannot deserialize TaskStatusUpdateEvent.", e);
+            }
         }
-        try {
-          TaskStatusUpdateEvent taskStatusUpdateEvent = TaskStatusUpdateEvent.fromJson(jsonObject.get("event").toString());
-          onStatusUpdate.accept(taskStatusUpdateEvent);
-        } catch (IOException e) {
-          log.error("Cannot deserialize TaskStatusUpdateEvent.", e);
-        }
-      }
     };
 
     client.onStringMessage(responseConsumer);

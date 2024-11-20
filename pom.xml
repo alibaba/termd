@@ -44,7 +44,7 @@
   <properties>
     <version.org.slf4j>1.7.21</version.org.slf4j>
     <netty.version>4.1.112.Final</netty.version>
-    <jackson.version>2.12.7.2</jackson.version>
+    <fastjson.version>2.0.53</fastjson.version>
 
     <!-- maven-compiler-plugin -->
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -83,9 +83,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
+      <groupId>com.alibaba.fastjson2</groupId>
+      <artifactId>fastjson2</artifactId>
+      <version>${fastjson.version}</version>
     </dependency>
 
     <!-- Apache SSHD -->

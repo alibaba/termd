@@ -16,7 +16,12 @@
 
 package io.termd.core.http;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.Charset;
+import java.util.Map;
+
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+
 import io.termd.core.function.BiConsumer;
 import io.termd.core.function.Consumer;
 import io.termd.core.io.BinaryDecoder;
@@ -26,10 +31,6 @@ import io.termd.core.tty.TtyEvent;
 import io.termd.core.tty.TtyEventDecoder;
 import io.termd.core.tty.TtyOutputMode;
 import io.termd.core.util.Vector;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Map;
 
 /**
  * A connection to an http client, independant of the protocol, it could be straight Websockets or
@@ -117,38 +118,37 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
   }
 
   public void writeToDecoder(String msg) {
-    ObjectMapper mapper = new ObjectMapper();
-    Map<String, Object> obj;
-    String action;
-    try {
-      obj = mapper.readValue(msg, Map.class);
-      action = (String) obj.get("action");
-    } catch (IOException e) {
-      // Log this
-      return;
-    }
-    if ("read".equals(action)) {
-      lastAccessedTime = System.currentTimeMillis();
-      String data = (String) obj.get("data");
-      decoder.write(data.getBytes()); //write back echo
-    } else if ("resize".equals(action)) {
+      JSONObject obj;
+      String action;
       try {
-        int cols = (Integer) getOrDefault(obj, "cols", size.x());
-        int rows = (Integer) getOrDefault(obj, "rows", size.y());
-        if (cols > 0 && rows > 0) {
-          Vector newSize = new Vector(cols, rows);
-          if (!newSize.equals(size())) {
-            size = newSize;
-            if (sizeHandler != null) {
-              sizeHandler.accept(size);
-            }
-          }
-        }
+          obj = JSON.parseObject(msg);
+          action = obj.getString("action");
       } catch (Exception e) {
-        // Invalid size
-        // Log this
+          // Log this
+          return;
       }
-    }
+      if ("read".equals(action)) {
+          lastAccessedTime = System.currentTimeMillis();
+          String data = obj.getString("data");
+          decoder.write(data.getBytes()); //write back echo
+      } else if ("resize".equals(action)) {
+          try {
+              int cols = obj.containsKey("cols") ? obj.getIntValue("cols") : size.x();
+              int rows = obj.containsKey("rows") ? obj.getIntValue("rows") : size.y();
+              if (cols > 0 && rows > 0) {
+                  Vector newSize = new Vector(cols, rows);
+                  if (!newSize.equals(size())) {
+                      size = newSize;
+                      if (sizeHandler != null) {
+                          sizeHandler.accept(size);
+                      }
+                  }
+              }
+          } catch (Exception e) {
+              // Invalid size
+              // Log this
+          }
+      }
   }
 
   private static Object getOrDefault(Map<String, Object> map, String key, Object defaultValue) {
