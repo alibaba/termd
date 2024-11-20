@@ -31,7 +31,6 @@
     <connection>scm:git:git@github.com:alibaba/termd.git</connection>
     <developerConnection>scm:git:git@github.com:alibaba/termd.git</developerConnection>
     <url>https://github.com/alibaba/termd</url>
-    
   </scm>
 
   <developers>
