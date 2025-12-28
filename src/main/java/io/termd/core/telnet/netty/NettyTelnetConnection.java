@@ -22,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.termd.core.telnet.TelnetConnection;
 import io.termd.core.telnet.TelnetHandler;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,10 +47,22 @@ public class NettyTelnetConnection extends TelnetConnection {
     context.channel().eventLoop().schedule(task, delay, unit);
   }
 
-  // Not properly synchronized, but ok for now
   @Override
   protected void send(byte[] data) {
-    context.writeAndFlush(Unpooled.buffer().writeBytes(data));
+    final byte[] copy = Arrays.copyOf(data, data.length);
+    Runnable writeTask = new Runnable() {
+      @Override
+      public void run() {
+        if (context.channel().isActive()) {
+          context.writeAndFlush(Unpooled.wrappedBuffer(copy));
+        }
+      }
+    };
+    if (context.channel().eventLoop().inEventLoop()) {
+      writeTask.run();
+    } else {
+      context.channel().eventLoop().execute(writeTask);
+    }
   }
 
   @Override
@@ -59,7 +72,17 @@ public class NettyTelnetConnection extends TelnetConnection {
 
   @Override
   public void close() {
-    context.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+    Runnable closeTask = new Runnable() {
+      @Override
+      public void run() {
+        context.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+      }
+    };
+    if (context.channel().eventLoop().inEventLoop()) {
+      closeTask.run();
+    } else {
+      context.channel().eventLoop().execute(closeTask);
+    }
   }
 
   public ChannelHandlerContext channelHandlerContext() {

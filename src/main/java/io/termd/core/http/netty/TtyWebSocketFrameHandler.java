@@ -27,6 +27,7 @@ import io.termd.core.function.Consumer;
 import io.termd.core.http.HttpTtyConnection;
 import io.termd.core.tty.TtyConnection;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -69,10 +70,24 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
       conn = new HttpTtyConnection() {
         @Override
         protected void write(byte[] buffer) {
-          ByteBuf byteBuf = Unpooled.buffer();
-          byteBuf.writeBytes(buffer);
-          if (context != null) {
-            context.writeAndFlush(new TextWebSocketFrame(byteBuf));
+          final ChannelHandlerContext ctx = context;
+          if (ctx == null) {
+            return;
+          }
+          final byte[] copy = Arrays.copyOf(buffer, buffer.length);
+          Runnable writeTask = new Runnable() {
+            @Override
+            public void run() {
+              if (context != null && ctx.channel().isActive()) {
+                ByteBuf byteBuf = Unpooled.wrappedBuffer(copy);
+                ctx.writeAndFlush(new TextWebSocketFrame(byteBuf));
+              }
+            }
+          };
+          if (ctx.executor().inEventLoop()) {
+            writeTask.run();
+          } else {
+            ctx.executor().execute(writeTask);
           }
         }
 
@@ -92,8 +107,22 @@ public class TtyWebSocketFrameHandler extends SimpleChannelInboundHandler<TextWe
 
         @Override
         public void close() {
-          if (context != null) {
-            context.close();
+          final ChannelHandlerContext ctx = context;
+          if (ctx == null) {
+            return;
+          }
+          Runnable closeTask = new Runnable() {
+            @Override
+            public void run() {
+              if (context != null) {
+                ctx.close();
+              }
+            }
+          };
+          if (ctx.executor().inEventLoop()) {
+            closeTask.run();
+          } else {
+            ctx.executor().execute(closeTask);
           }
         }
       };
