@@ -229,7 +229,7 @@ public class LineBufferTest {
     assertEquals(new Vector(0, 2), buffer.getCursorPosition(1));
   }
 
-  // @Test
+  @Test
   public void testCursorPositionWithMultiCell1() {
     LineBuffer buffer = new LineBuffer();
     buffer.insert('한', 'b');
@@ -243,7 +243,7 @@ public class LineBufferTest {
     }
   }
 
-  // @Test
+  @Test
   public void testCursorPositionWithMultiCell2() {
     LineBuffer buffer = new LineBuffer();
     buffer.insert('a', '한');

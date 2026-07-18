@@ -23,6 +23,7 @@ public class BinaryEncodingTest {
   public void testChars() throws IOException {
     testChars("A", 65);
     testChars("\u20AC", -30, -126, -84); // Euro
+    testChars("中文", -28, -72, -83, -26, -106, -121);
     testChars(new StringBuilder().appendCodePoint(66231).toString(), -16, -112, -118, -73); // Surrogate
   }
 

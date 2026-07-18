@@ -38,6 +38,7 @@ import io.termd.core.tty.TtyConnectionSupport;
 import io.termd.core.tty.TtyEvent;
 import io.termd.core.tty.TtyOutputMode;
 import io.termd.core.util.Vector;
+import io.termd.core.util.Wcwidth;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class TestTerm {
 
   private TestBase readlineTest;
-  private int[][] buffer = new int[10][];
+  private String[][] buffer = new String[10][];
   private int row;
   private int cursor;
   private int status = 0;
@@ -65,13 +66,12 @@ class TestTerm {
     public void accept(int[] event) {
       for (int i : event) {
         if (buffer[row] == null) {
-          buffer[row] = new int[100];
+          buffer[row] = new String[100];
         }
         switch (status) {
           case 0:
             if (i >= 32) {
-              buffer[row][cursor] = i;
-              forward();
+              writeCodePoint(i);
             } else {
               switch (i) {
                 case 7:
@@ -133,7 +133,7 @@ class TestTerm {
                     throw new UnsupportedOperationException("Not yet implemented");
                   } else {
                     for (int j = cursor;j < buffer[row].length;j++) {
-                      buffer[row][j] = 0;
+                      buffer[row][j] = null;
                     }
                   }
                   break;
@@ -148,6 +148,43 @@ class TestTerm {
           default:
             throw new UnsupportedOperationException("Unsupported cp=" + i + " with status=" + status);
         }
+      }
+    }
+
+    private void writeCodePoint(int codePoint) {
+      int cellWidth = Wcwidth.of(codePoint);
+      if (cellWidth == 0) {
+        appendCombiningCodePoint(codePoint);
+        return;
+      }
+      if (cursor + cellWidth > width) {
+        cursor = 0;
+        row++;
+        if (buffer[row] == null) {
+          buffer[row] = new String[100];
+        }
+      }
+      buffer[row][cursor] = new String(Character.toChars(codePoint));
+      for (int i = 1; i < cellWidth; i++) {
+        buffer[row][cursor + i] = "";
+      }
+      for (int i = 0; i < cellWidth; i++) {
+        forward();
+      }
+    }
+
+    private void appendCombiningCodePoint(int codePoint) {
+      int targetRow = row;
+      int targetCol = cursor - 1;
+      if (targetCol < 0 && targetRow > 0) {
+        targetRow--;
+        targetCol = width - 1;
+      }
+      while (targetCol >= 0 && "".equals(buffer[targetRow][targetCol])) {
+        targetCol--;
+      }
+      if (targetCol >= 0 && buffer[targetRow][targetCol] != null) {
+        buffer[targetRow][targetCol] += new String(Character.toChars(codePoint));
       }
     }
 
@@ -221,7 +258,7 @@ class TestTerm {
     public void setSizeHandler(Consumer<Vector> handler) {
       sizeHandler = handler;
       if (handler != null) {
-        handler.accept(new Vector(40, 20));
+        handler.accept(new Vector(width, 20));
       }
     }
 
@@ -361,16 +398,16 @@ class TestTerm {
 
   private List<String> render() {
     List<String> lines = new ArrayList<String>();
-    for (int[] row : buffer) {
+    for (String[] row : buffer) {
       if (row == null) {
         break;
       }
       StringBuilder line = new StringBuilder();
-      for (int codePoint : row) {
-        if (codePoint < 32) {
+      for (String cell : row) {
+        if (cell == null) {
           break;
         }
-        line.appendCodePoint(codePoint);
+        line.append(cell);
       }
       lines.add(line.toString());
     }

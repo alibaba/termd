@@ -96,8 +96,8 @@ public class LineBuffer {
       if (cp != '\n') {
         throw new IllegalArgumentException("LineBuffer can only contain \\n control char");
       }
-    } else if (w != 1) {
-      throw new IllegalArgumentException("LineBuffer cannot contain chars of width!=1 for the moment");
+    } else if (cp == 0) {
+      throw new IllegalArgumentException("LineBuffer cannot contain the null control char");
     }
     if (cursor < size) {
       System.arraycopy(data, cursor, data, cursor + 1, size - cursor);
@@ -303,13 +303,123 @@ public class LineBuffer {
   }
 
   public void update(LineBuffer dst, Consumer<int[]> out, int width) {
-    new Update(out, width).perform(dst);
+    if (containsNonSingleWidth() || dst.containsNonSingleWidth()) {
+      new Redraw(out, width).perform(dst);
+    } else {
+      new Update(out, width).perform(dst);
+    }
+  }
+
+  private boolean containsNonSingleWidth() {
+    for (int i = 0; i < size; i++) {
+      int codePoint = data[i];
+      if (codePoint != '\n' && Wcwidth.of(codePoint) != 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 非单宽字符采用整行重绘。终端显示的基本单位是单元格，整行重绘可以直接处理宽字符和组合字符，
+   * 也能在删除组合字符时清除已经附着在基础字符上的旧字形。
+   */
+  private class Redraw {
+
+    private final Consumer<int[]> out;
+    private final int width;
+    private int scrCol;
+    private int scrRow;
+
+    private Redraw(Consumer<int[]> out, int width) {
+      this.out = out;
+      this.width = width;
+      Vector position = getCursorPosition(width);
+      this.scrCol = position.x();
+      this.scrRow = position.y();
+    }
+
+    private void perform(LineBuffer dst) {
+      moveCursor(0, 0);
+
+      int lastSourceRow = getPosition(size, width).y();
+      for (int row = 0; row <= lastSourceRow; row++) {
+        out.accept(new int[]{'\033', '[', 'K'});
+        if (row < lastSourceRow) {
+          out.accept(new int[]{'\033', '[', '1', 'B'});
+          scrRow++;
+        }
+      }
+      moveCursor(0, 0);
+
+      if (dst.size > 0) {
+        out.accept(dst.toArray());
+      }
+      Vector end = dst.getPosition(dst.size, width);
+      scrCol = end.x();
+      scrRow = end.y();
+
+      if (dst.endsAtRightMargin(width)) {
+        out.accept(new int[]{' ', '\r'});
+        scrCol = 0;
+      }
+
+      Vector cursorPosition = dst.getCursorPosition(width);
+      moveCursor(cursorPosition.x(), cursorPosition.y());
+
+      data = dst.data.clone();
+      cursor = dst.cursor;
+      size = dst.size;
+    }
+
+    private void moveCursor(int col, int row) {
+      if (scrCol != col) {
+        if (col == 0) {
+          out.accept(new int[]{'\r'});
+          scrCol = 0;
+        } else {
+          while (scrCol != col) {
+            if (scrCol < col) {
+              scrCol++;
+              out.accept(new int[]{'\033', '[', '1', 'C'});
+            } else {
+              scrCol--;
+              out.accept(new int[]{'\b'});
+            }
+          }
+        }
+      }
+      while (scrRow != row) {
+        if (row < scrRow) {
+          scrRow--;
+          out.accept(new int[]{'\033', '[', '1', 'A'});
+        } else {
+          scrRow++;
+          out.accept(new int[]{'\033', '[', '1', 'B'});
+        }
+      }
+    }
+  }
+
+  private boolean endsAtRightMargin(int width) {
+    if (getPosition(size, width).x() != 0) {
+      return false;
+    }
+    for (int i = size - 1; i >= 0; i--) {
+      int codePoint = data[i];
+      if (codePoint == '\n') {
+        return false;
+      }
+      if (Wcwidth.of(codePoint) > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // The update algorithm encapsulated in an inner class
   // todo : use term capabilities instead of hardcoded ansi programming
   // todo : support other control chars
-  // todo : support codepoint of with != 1 (like combining chars, etc...)
   // todo : issue existing chars for moving right instead of cursor left movement
   private class Update {
 

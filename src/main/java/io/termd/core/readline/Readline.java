@@ -291,9 +291,10 @@ public class Readline {
 
       // Erase screen
       LineBuffer abc = new LineBuffer(buffer.getCapacity());
-      abc.insert(currentPrompt);
+      int[] promptCodePoints = Helper.toCodePoints(currentPrompt);
+      abc.insert(promptCodePoints);
       abc.insert(buffer.toArray());
-      abc.setCursor(currentPrompt.length() + buffer.getCursor());
+      abc.setCursor(promptCodePoints.length + buffer.getCursor());
 
       // Recompute new cursor
       Vector pos = abc.getCursorPosition(newWidth);
@@ -371,9 +372,10 @@ public class Readline {
      */
     public void redraw() {
       LineBuffer toto = new LineBuffer(buffer.getCapacity());
-      toto.insert(Helper.toCodePoints(currentPrompt));
+      int[] promptCodePoints = Helper.toCodePoints(currentPrompt);
+      toto.insert(promptCodePoints);
       toto.insert(buffer.toArray());
-      toto.setCursor(currentPrompt.length() + buffer.getCursor());
+      toto.setCursor(promptCodePoints.length + buffer.getCursor());
       LineBuffer abc = new LineBuffer(toto.getCapacity());
       abc.update(toto, conn.stdoutHandler(), size.x());
     }
@@ -391,13 +393,14 @@ public class Readline {
     private void refresh(LineBuffer update, int width) {
       LineBuffer copy3 = new LineBuffer(update.getCapacity());
       final List<Integer> codePoints = new LinkedList<Integer>();
-      copy3.insert(Helper.toCodePoints(currentPrompt));
+      int[] promptCodePoints = Helper.toCodePoints(currentPrompt);
+      copy3.insert(promptCodePoints);
       copy3.insert(buffer().toArray());
-      copy3.setCursor(currentPrompt.length() + buffer().getCursor());
+      copy3.setCursor(promptCodePoints.length + buffer().getCursor());
       LineBuffer copy2 = new LineBuffer(copy3.getCapacity());
-      copy2.insert(Helper.toCodePoints(currentPrompt));
+      copy2.insert(promptCodePoints);
       copy2.insert(update.toArray());
-      copy2.setCursor(currentPrompt.length() + update.getCursor());
+      copy2.setCursor(promptCodePoints.length + update.getCursor());
       copy3.update(copy2, new Consumer<int[]>() {
         @Override
         public void accept(int[] data) {
