@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -261,6 +262,99 @@ public class ReadlineTest extends TestBase {
     assertEquals("bye", line.get());
     term.assertScreen("% hello", "% bye");
     term.assertAt(2, 0);
+  }
+
+  @Test
+  public void testChineseInput() {
+    TestTerm term = new TestTerm(this);
+    Supplier<String> line = term.readlineComplete();
+    term.read('中', '文', '\r');
+    assertEquals("中文", line.get());
+    assertEquals(0, term.getBellCount());
+  }
+
+  @Test
+  public void testChineseEditing() {
+    TestTerm term = new TestTerm(this);
+    Supplier<String> line = term.readlineComplete();
+    term.read('A', '中', 'B');
+    term.assertScreen("% A中B");
+    term.assertAt(0, 6);
+
+    term.read(BACKWARD_KEY);
+    term.assertAt(0, 5);
+    term.read(BACKWARD_DELETE_KEY);
+    term.assertScreen("% AB");
+    term.assertAt(0, 3);
+
+    term.read('\r');
+    assertEquals("AB", line.get());
+  }
+
+  @Test
+  public void testChineseWrapsBeforeLastCell() {
+    TestTerm term = new TestTerm(this).setWidth(5);
+    term.readlineFail();
+    term.read('A', 'B', '中', 'C');
+    term.assertScreen("% AB", "中C");
+    term.assertAt(1, 3);
+
+    term.read(BACKWARD_KEY);
+    term.assertAt(1, 2);
+    term.read(BACKWARD_KEY);
+    term.assertAt(0, 4);
+  }
+
+  @Test
+  public void testSupplementaryUnicodePrompt() {
+    TestTerm term = new TestTerm(this);
+    final AtomicReference<String> line = new AtomicReference<String>();
+    String prompt = new String(Character.toChars(0x20000)) + "> ";
+    term.readline.readline(term.conn, prompt, new Consumer<String>() {
+      @Override
+      public void accept(String value) {
+        line.set(value);
+      }
+    });
+
+    term.read('A', 'B');
+    term.assertScreen(prompt + "AB");
+    term.assertAt(0, 6);
+    term.read(BACKWARD_KEY);
+    term.assertAt(0, 5);
+    term.read('\r');
+    assertEquals("AB", line.get());
+  }
+
+  @Test
+  public void testCombiningCharacterEditing() {
+    TestTerm term = new TestTerm(this);
+    Supplier<String> line = term.readlineComplete();
+    term.read('e', '\u0301', 'X');
+    term.assertScreen("% e\u0301X");
+    term.assertAt(0, 4);
+
+    term.read(BACKWARD_KEY);
+    term.assertAt(0, 3);
+    term.read(BACKWARD_DELETE_KEY);
+    term.assertScreen("% eX");
+    term.assertAt(0, 3);
+
+    term.read('\r');
+    assertEquals("eX", line.get());
+  }
+
+  @Test
+  public void testSupplementaryUnicodeInput() {
+    TestTerm term = new TestTerm(this);
+    Supplier<String> line = term.readlineComplete();
+    int codePoint = 0x20000;
+    String value = new String(Character.toChars(codePoint));
+    term.read(codePoint, 'X');
+    term.assertScreen("% " + value + "X");
+    term.assertAt(0, 5);
+    term.read('\r');
+    assertEquals(value + "X", line.get());
   }
 
   @Test

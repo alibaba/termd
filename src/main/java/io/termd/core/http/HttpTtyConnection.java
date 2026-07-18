@@ -130,7 +130,7 @@ public abstract class HttpTtyConnection extends TtyConnectionSupport {
       if ("read".equals(action)) {
           lastAccessedTime = System.currentTimeMillis();
           String data = obj.getString("data");
-          decoder.write(data.getBytes()); //write back echo
+          decoder.write(data.getBytes(charset)); // 按连接字符集进入统一解码链路
       } else if ("resize".equals(action)) {
           try {
               int cols = obj.containsKey("cols") ? obj.getIntValue("cols") : size.x();
